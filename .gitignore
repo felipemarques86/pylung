@@ -4,5 +4,6 @@
 *.iml
 /test/data/temp
 *.pkl
-/logs/*
+/src/logs/*.*
+/src/logs/checkpoint
 *.h5
