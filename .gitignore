@@ -2,3 +2,5 @@
 /inspectionProfiles
 /.idea/*.xml
 *.iml
+/test/data/temp
+*.pkl
