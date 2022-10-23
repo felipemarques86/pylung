@@ -4,3 +4,5 @@
 *.iml
 /test/data/temp
 *.pkl
+/logs/*
+*.h5
