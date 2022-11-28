@@ -1,40 +1,25 @@
 import time
-from common.experiment import run_experiment, print_results
-from dataset.lidc_idri_loader import load_lidc_idri
+
 from vit.model_01 import create_vit_object_detector
-import pickle
 
-def save_ds_single_file(filename, obj):
-    with open(filename, 'wb') as outp:  # Overwrites any existing file.
-        pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
-    pass
-
-def load_ds_single_file(image_size, pad, scan_count_perc):
-    with open(get_ds_single_file_name(image_size, pad, scan_count_perc), 'rb') as filePointer:
-        xtrain, ytrain, _, _ = pickle.load(filePointer)
-
-    with open(get_ds_single_file_name(512, pad, scan_count_perc), 'rb') as filePointer:
-        _, _, xtest, ytest = pickle.load(filePointer)
-
-    return xtrain, ytrain, xtest, ytest
-
-def get_ds_single_file_name(image_size, pad, scan_count_perc):
-    return 'C:\\temp\\LIDC-' + str(image_size) + '-' + str(pad) + '-' + str(scan_count_perc) + '.pkl'
+from common.ds_reader import load_ds_single_file, get_ds_single_file_name, save_ds_single_file
+from common.experiment import run_experiment, print_results
+from dataset.lidc_idri_loader import load_lidc_idri_per_annotation
 
 TRAIN_SIZE = 0.8
 TEST_SIZE = 1 - TRAIN_SIZE
-IMAGE_SIZE = 512
+IMAGE_SIZE = 128
 SCAN_COUNT_PERC = 1
 PAD = 20
-patch_size = 32  # Size of the patches to be extracted from the input images
+patch_size = 16 # Size of the patches to be extracted from the input images
 input_shape = (IMAGE_SIZE, IMAGE_SIZE, 1)  # input image shape
-learning_rate = 0.005
-weight_decay = 0.0001
+learning_rate = 0.00005
+weight_decay = 0.00001
 batch_size = 32
 num_epochs = 400
 num_patches = (IMAGE_SIZE // patch_size) ** 2
 projection_dim = 64
-num_heads = 16
+num_heads = 32
 # Size of the transformer layers
 transformer_units = [
     projection_dim * 2,
@@ -55,7 +40,7 @@ try:
     x_train, y_train, x_test, y_test = load_ds_single_file(IMAGE_SIZE, PAD, SCAN_COUNT_PERC)
 except Exception as e:
     print(e)
-    x_train, y_train, x_test, y_test = load_lidc_idri(image_size=IMAGE_SIZE, annotation_size_perc=SCAN_COUNT_PERC, pad=PAD)
+    x_train, y_train, x_test, y_test = load_lidc_idri_per_annotation(image_size=IMAGE_SIZE, annotation_size_perc=SCAN_COUNT_PERC, pad=PAD)
     save = True
 
 if save:

@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
-from vit.patches import Patches, PatchEncoder
+from vit.keras_custom.patches import Patches, PatchEncoder
 
 
 def mlp(x, hidden_units, dropout_rate):

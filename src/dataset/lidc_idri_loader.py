@@ -6,7 +6,10 @@ from pathlib import Path
 import numpy as np
 import pylidc as pl
 from PIL import Image
+from pylidc.utils import consensus
 from tensorflow import keras
+import matplotlib.pyplot as plt
+
 
 LIDC_IMAGE_ = 'lidc_image_'
 SCALED_BOX_ = 'lidc_scaled_box_'
@@ -115,7 +118,41 @@ def build_pre_processed_dataset(image_size, base_path, annotation_size_perc=1, i
             break
 
 
-def load_lidc_idri(image_size, annotation_size_perc=1, pad=0):
+
+def load_lidc_idri_annotations_only(pad=0):
+    total_images = 0
+    annotation_list = pl.query(pl.Annotation)
+    annotations_count = annotation_list.count()
+    annotations = []
+    w = 512
+    h = 512
+    for i in range(0, annotations_count):
+        annotation = annotation_list[i]
+        annotation_bbox = annotation.bbox(pad)
+
+        y0, y1 = annotation_bbox[0].start, annotation_bbox[0].stop
+        x0, x1 = annotation_bbox[1].start, annotation_bbox[1].stop
+
+        scaled_bbox = (float(x0) / w, float(y0) / h, float(x1) / w, float(y1) / h)
+
+        # apply relative scaling to bounding boxes as per given image and append to list
+        annotations.append(scaled_bbox)
+        total_images = total_images + 1
+        print(total_images)
+
+    # Convert the list to numpy array, split to train and test dataset
+    (ytrain) = (
+        np.asarray(annotations[: int(len(annotations) * 0.8)]),
+    )
+    (ytest) = (
+        np.asarray(annotations[int(len(annotations) * 0.8):]),
+    )
+
+    return ytrain, ytest
+
+
+
+def load_lidc_idri_per_annotation(image_size, annotation_size_perc=1, pad=0):
     total_images = 0
     annotation_list = pl.query(pl.Annotation)
     annotations_count = int(annotation_list.count() * annotation_size_perc)
@@ -156,6 +193,135 @@ def load_lidc_idri(image_size, annotation_size_perc=1, pad=0):
 
     return xtrain, ytrain, xtest, ytest
 
+def build_pre_processed_dataset_consensus(image_size, base_path, size_perc=1, image_count=-1, pad=0,consensus_level=0.5):
+    if image_size != 64 and image_size != 128 and image_size != 256 and image_size != 512:
+        raise Exception('image_size parameter must have the value: 64, 128, 256 or 512. ' + str(image_size) +
+                        ' is not a valid value')
+    if base_path is None:
+        raise Exception('base_path is mandatory')
+
+    Path(base_path + PRE_PROCESSED_FOLDER_PREFIX + str(image_size) + '-' + str(pad) + '-consensus-' + str(consensus_level)).mkdir(parents=True, exist_ok=True)
+    scan_list = pl.query(pl.Scan)
+    scan_list_size = int(scan_list.count() * size_perc)
+    annotations = []
+    total_images = 0
+    for i in range(0, scan_list_size):
+        scan = scan_list[i]
+        nodules = scan.cluster_annotations()
+        vol = scan.to_volume(verbose=False)
+        nodules_count = len(nodules)
+        for j in range(0, nodules_count):
+            nodule = nodules[j]
+            a, cbbox, b = consensus(nodule, clevel=consensus_level, pad=[(pad, pad), (pad, pad), (0, 0)])
+            y0, y1 = cbbox[0].start, cbbox[0].stop
+            x0, x1 = cbbox[1].start, cbbox[1].stop
+            k = int(0.5 * (cbbox[2].stop - cbbox[2].start))
+            z = max(int(x1 - k) - 1, 0)
+            (w, h) = vol[:, :, int(k)].shape
+
+            image = vol[:, :, int(k)]
+            #image = Image.fromarray(__normalize(vol[:, :, int(k)]))
+            #if image_size != 512:
+            #    image = image.resize((image_size, image_size))
+            scaled_bbox = (float(x0) / w, float(y0) / h, float(x1) / w, float(y1) / h)
+
+            total_images = total_images + 1
+
+            __save_object(scaled_bbox,
+                          base_path + PRE_PROCESSED_FOLDER_PREFIX + str(image_size) + '-' + str(pad) + os.sep + SCALED_BOX_
+                          + str(total_images) + DATA_FILE_EXT)
+            __save_object(image,
+                          base_path + PRE_PROCESSED_FOLDER_PREFIX + str(image_size) + '-' + str(pad) + os.sep + LIDC_IMAGE_
+                          + str(total_images) + DATA_FILE_EXT)
+
+            total_images = total_images + 1
+            if image_count > 0 and total_images >= image_count:
+                break
+
+    return total_images
+
+
+
+def load_lidc_idri_per_consensus(image_size, size_perc=1, pad=0, consensus_level=0.5):
+    scan_list = pl.query(pl.Scan)
+    scan_list_size = int(scan_list.count() * size_perc)
+    images = []
+    annotations = []
+    total_images = 0
+    for i in range(0, scan_list_size):
+        scan = scan_list[i]
+        nodules = scan.cluster_annotations()
+        vol = scan.to_volume(verbose=False)
+        nodules_count = len(nodules)
+        for j in range(0, nodules_count):
+            nodule = nodules[j]
+            a, cbbox, b = consensus(nodule, clevel=consensus_level, pad=[(pad, pad), (pad, pad), (0, 0)])
+            y0, y1 = cbbox[0].start, cbbox[0].stop
+            x0, x1 = cbbox[1].start, cbbox[1].stop
+            k = int(0.5 * (cbbox[2].stop - cbbox[2].start))
+            z = max(int(x1 - k) - 1, 0)
+            (w, h) = vol[:, :, int(k)].shape
+
+            image = Image.fromarray(normalize(vol[:, :, int(k)]))
+            image = image.resize((image_size, image_size))
+            images.append(keras.utils.img_to_array(image))
+            scaled_bbox = (float(x0) / w, float(y0) / h, float(x1) / w, float(y1) / h)
+
+            annotations.append(scaled_bbox)
+            total_images = total_images + 1
+
+
+    # Convert the list to numpy array, split to train and test dataset
+    (xtrain), (ytrain) = (
+        np.asarray(images[: int(len(images) * 0.8)]),
+        np.asarray(annotations[: int(len(annotations) * 0.8)]),
+    )
+    (xtest), (ytest) = (
+        np.asarray(images[int(len(images) * 0.8):]),
+        np.asarray(annotations[int(len(annotations) * 0.8):]),
+    )
+
+    return xtrain, ytrain, xtest, ytest
+
+
+def load_lidc_idri_per_consensus_no_norm(start=0, end=0, pad=0, consensus_level=0.5):
+    scan_list = pl.query(pl.Scan)
+    scan_list_size = min(scan_list.count(), end)
+    images = []
+    annotations = []
+    total_images = 0
+    for i in range(start, scan_list_size):
+        scan = scan_list[i]
+        nodules = scan.cluster_annotations()
+        vol = scan.to_volume(verbose=False)
+        nodules_count = len(nodules)
+        for j in range(0, nodules_count):
+            nodule = nodules[j]
+            a, cbbox, b = consensus(nodule, clevel=consensus_level, pad=[(pad, pad), (pad, pad), (0, 0)])
+            y0, y1 = cbbox[0].start, cbbox[0].stop
+            x0, x1 = cbbox[1].start, cbbox[1].stop
+            k = int(0.5 * (cbbox[2].stop - cbbox[2].start))
+            z = max(int(x1 - k) - 1, 0)
+            (w, h) = vol[:, :, int(k)].shape
+
+            images.append(vol[:, :, int(k)])
+            scaled_bbox = (float(x0) / w, float(y0) / h, float(x1) / w, float(y1) / h)
+
+            annotations.append(scaled_bbox)
+            total_images = total_images + 1
+
+
+    # Convert the list to numpy array, split to train and test dataset
+    (xtrain), (ytrain) = (
+        np.asarray(images[: int(len(images) * 0.8)]),
+        np.asarray(annotations[: int(len(annotations) * 0.8)]),
+    )
+    (xtest), (ytest) = (
+        np.asarray(images[int(len(images) * 0.8):]),
+        np.asarray(annotations[int(len(annotations) * 0.8):]),
+    )
+
+    return xtrain, ytrain, xtest, ytest
 
 def __normalize(image):
     image = (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
@@ -167,3 +333,10 @@ def __normalize(image):
 def __save_object(obj, filename):
     with open(filename, 'wb') as outp:  # Overwrites any existing file.
         pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
+
+def normalize(im):
+    im[im > 400] = 400
+    im[im < -1000] = -1000
+
+    im = (255 - 0)/(400 - (-1000)) * (im - 400) + 255
+    return im.astype(np.uint8)

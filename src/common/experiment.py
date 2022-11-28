@@ -1,5 +1,5 @@
 import random as rand
-import cv2
+
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
@@ -8,30 +8,29 @@ import tensorflow_addons as tfa
 from utils.bounding_box_iou import bounding_box_intersection_over_union
 
 
-def print_results(vit_object_detector, image_size, x_test, y_test):
+def print_results(vit_object_detector, x_test, y_test, save=True):
     import matplotlib.patches as patches
 
     # Saves the model in current path
-    vit_object_detector.save("vit_object_detector.h5", save_format="h5")
+    if (save):
+        vit_object_detector.save("vit_object_detector.h5", save_format="h5")
 
     i, mean_iou = 0, 0
     N = 10
-    #sample = random.sample(x_test, 10)
+    # sample = random.sample(x_test, 10)
     # Compare results for 10 images in the test set
-    for i in rand.sample(range(0, len(x_test)-1), N):
+    for i in rand.sample(range(0, len(x_test) - 1), N):
         input_image = x_test[i]
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 15))
         im = input_image
 
         # Display the image
-        ax1.imshow(im[:, :, 0], cmap=plt.cm.gray)
-        ax2.imshow(im[:, :, 0], cmap=plt.cm.gray)
+        ax1.imshow(im, cmap=plt.cm.gray)
+        ax2.imshow(im, cmap=plt.cm.gray)
 
-        input_image = cv2.resize(
-            input_image, (image_size, image_size), interpolation=cv2.INTER_AREA
-        )
         input_image = np.expand_dims(input_image, axis=0)
-        preds = vit_object_detector.predict(input_image)[0]
+        p = vit_object_detector.predict(input_image)
+        preds = p[0]
 
         (h, w) = (im).shape[0:2]
 
@@ -40,6 +39,9 @@ def print_results(vit_object_detector, image_size, x_test, y_test):
         bottom_right_x, bottom_right_y = int(preds[2] * w), int(preds[3] * h)
 
         box_predicted = [top_left_x, top_left_y, bottom_right_x, bottom_right_y]
+
+        print(box_predicted)
+
         # Create the bounding box
         rect = patches.Rectangle(
             (top_left_x, top_left_y),
@@ -93,12 +95,42 @@ def print_results(vit_object_detector, image_size, x_test, y_test):
             + "IoU"
             + str(bounding_box_intersection_over_union(box_predicted, box_truth))
         )
-        #i = i + 1
+        # i = i + 1
 
     print("mean_iou: " + str(mean_iou / N))
     plt.show()
 
-def run_experiment(model, learning_rate, weight_decay, batch_size, num_epochs, x_train, y_train):
+def run_experiment_sgd(model, learning_rate, batch_size, num_epochs, x_train, y_train):
+
+    optimizer = tf.keras.optimizers.SGD(
+        learning_rate=0.01, momentum=learning_rate, nesterov=False, name="SGD"
+    )
+
+    # Compile model.
+    model.compile(optimizer=optimizer, loss=tf.keras.losses.MeanSquaredError())
+
+    checkpoint_filepath = "../logs/"
+    checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+        checkpoint_filepath,
+        monitor="val_loss",
+        save_best_only=True,
+        save_weights_only=True,
+    )
+
+    history = model.fit(
+        x=x_train,
+        y=y_train,
+        batch_size=batch_size,
+        epochs=num_epochs,
+        validation_split=0.1,
+        callbacks=[
+            checkpoint_callback
+        ],
+    )
+
+    return history
+
+def run_experiment_adamw(model, learning_rate, weight_decay, batch_size, num_epochs, x_train, y_train):
 
     optimizer = tfa.optimizers.AdamW(
         learning_rate=learning_rate, weight_decay=weight_decay
