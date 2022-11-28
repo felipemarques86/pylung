@@ -4,7 +4,7 @@ import numpy as np
 
 from common.experiment import run_experiment_sgd, print_results
 from runtime.read_ds import read_lidc_dataset
-from vit.model_01 import create_vit_object_detector
+from vit.keras_custom.keras_vit import create_vit_object_detector
 
 TRAIN_SIZE = 0.8
 TEST_SIZE = 1 - TRAIN_SIZE
