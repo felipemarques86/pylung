@@ -289,7 +289,6 @@ def load_lidc_idri_per_consensus_no_norm(start=0, end=0, pad=0, consensus_level=
     scan_list_size = min(scan_list.count(), end)
     images = []
     annotations = []
-    total_images = 0
     for i in range(start, scan_list_size):
         scan = scan_list[i]
         nodules = scan.cluster_annotations()
@@ -297,31 +296,19 @@ def load_lidc_idri_per_consensus_no_norm(start=0, end=0, pad=0, consensus_level=
         nodules_count = len(nodules)
         for j in range(0, nodules_count):
             nodule = nodules[j]
+            m_val = max(ann.malignancy for ann in nodule) #malignancy - how "cancerous" it is
+            s_val = min(ann.subtlety for ann in nodule) #subtlety - how easy to detect
             a, cbbox, b = consensus(nodule, clevel=consensus_level, pad=[(pad, pad), (pad, pad), (0, 0)])
             y0, y1 = cbbox[0].start, cbbox[0].stop
             x0, x1 = cbbox[1].start, cbbox[1].stop
             k = int(0.5 * (cbbox[2].stop - cbbox[2].start))
-            z = max(int(x1 - k) - 1, 0)
-            (w, h) = vol[:, :, int(k)].shape
+            z = cbbox[2].start + k
 
-            images.append(vol[:, :, int(k)])
-            scaled_bbox = (float(x0) / w, float(y0) / h, float(x1) / w, float(y1) / h)
+            images.append(vol[:, :, int(z)])
 
-            annotations.append(scaled_bbox)
-            total_images = total_images + 1
+            annotations.append((y0, y1, x0, x1, m_val, s_val))
 
-
-    # Convert the list to numpy array, split to train and test dataset
-    (xtrain), (ytrain) = (
-        np.asarray(images[: int(len(images) * 0.8)]),
-        np.asarray(annotations[: int(len(annotations) * 0.8)]),
-    )
-    (xtest), (ytest) = (
-        np.asarray(images[int(len(images) * 0.8):]),
-        np.asarray(annotations[int(len(annotations) * 0.8):]),
-    )
-
-    return xtrain, ytrain, xtest, ytest
+    return images, annotations
 
 def __normalize(image):
     image = (image - MIN_BOUND) / (MAX_BOUND - MIN_BOUND)
