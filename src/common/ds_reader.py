@@ -20,6 +20,8 @@ def load_annotation_file(pad):
     return ytrain, ytest
 
 def get_ds_single_file_name(image_size, pad, scan_count_perc, type):
+    if image_size == -1:
+        return 'C:\\temp\\LIDC-RAW-' + str(pad) + '-' + str(scan_count_perc) + '-' + type + '.pkl'
     return 'C:\\temp\\LIDC-' + str(image_size) + '-' + str(pad) + '-' + str(scan_count_perc) + '-' + type + '.pkl'
 
 def get_annotation_file_name(pad):

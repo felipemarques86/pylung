@@ -21,6 +21,11 @@ def create_vit_object_detector(
     transformer_units,
     transformer_layers,
     mlp_head_units,
+    bbox_layer_density=4,
+    activation=None,
+    dropout1=.1,
+    dropout2=.1,
+    dropout3=.3
 ):
     inputs = layers.Input(shape=input_shape)
     # Create patches
@@ -36,27 +41,27 @@ def create_vit_object_detector(
         x1 = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
         # Create a multi-head attention layer.
         attention_output = layers.MultiHeadAttention(
-            num_heads=num_heads, key_dim=projection_dim, dropout=0.1
+            num_heads=num_heads, key_dim=projection_dim, dropout=dropout1
         )(x1, x1)
         # Skip connection 1.
         x2 = layers.Add()([attention_output, encoded_patches])
         # Layer normalization 2.
         x3 = layers.LayerNormalization(epsilon=1e-6)(x2)
         # MLP
-        x3 = mlp(x3, hidden_units=transformer_units, dropout_rate=0.1)
+        x3 = mlp(x3, hidden_units=transformer_units, dropout_rate=dropout2)
         # Skip connection 2.
         encoded_patches = layers.Add()([x3, x2])
 
     # Create a [batch_size, projection_dim] tensor.
     representation = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
     representation = layers.Flatten()(representation)
-    representation = layers.Dropout(0.3)(representation)
+    representation = layers.Dropout(dropout3)(representation)
     # Add MLP.
-    features = mlp(representation, hidden_units=mlp_head_units, dropout_rate=0.3)
+    features = mlp(representation, hidden_units=mlp_head_units, dropout_rate=dropout3)
 
-    bounding_box = layers.Dense(4)(
+    output = layers.Dense(bbox_layer_density, activation=activation)(
         features
-    )  # Final four neurons that output bounding box
+    )
 
     # return Keras model.
-    return keras.Model(inputs=inputs, outputs=bounding_box)
+    return keras.Model(inputs=inputs, outputs=output)
