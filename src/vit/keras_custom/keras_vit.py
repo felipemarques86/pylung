@@ -5,11 +5,7 @@ from tensorflow.keras import layers
 from vit.keras_custom.patches import Patches, PatchEncoder
 
 
-def mlp(x, hidden_units, dropout_rate):
-    for units in hidden_units:
-        x = layers.Dense(units, activation=tf.nn.gelu)(x)
-        x = layers.Dropout(dropout_rate)(x)
-    return x
+
 
 
 def create_vit_object_detector(
@@ -34,6 +30,13 @@ def create_vit_object_detector(
     # Encode patches
     encoded_patches = PatchEncoder(num_patches, patch_size, input_shape, projection_dim, num_heads,
                   transformer_units, transformer_layers, mlp_head_units)(patches)
+
+
+    def mlp(x, hidden_units, dropout_rate):
+        for units in hidden_units:
+            x = layers.Dense(units, activation=tf.nn.gelu)(x)
+            x = layers.Dropout(dropout_rate)(x)
+        return x
 
     # Create multiple layers of the Transformer block.
     for _ in range(transformer_layers):

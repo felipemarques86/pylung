@@ -267,7 +267,7 @@ def run_experiment_cce(model, learning_rate, weight_decay,  batch_size, num_epoc
     checkpoint_filepath = "../logs/"
     checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
         checkpoint_filepath,
-        monitor="val_loss",
+        monitor="val_accuracy",
         save_best_only=True,
         save_weights_only=True,
     )

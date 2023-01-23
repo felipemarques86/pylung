@@ -12,7 +12,7 @@ from common.ds_reader import get_ds_single_file_name
 from common.experiment import print_history, print_results_classification, run_experiment_cce, shuffle_data
 
 DROP_OUT_1 = 0.4
-TRAIN_SIZE = 0.8
+TRAIN_SIZE = 0.9
 TEST_SIZE = 1 - TRAIN_SIZE
 IMAGE_SIZE = 224
 SCAN_COUNT_PERC = 1
@@ -21,9 +21,9 @@ TRAIN = True
 history = []
 input_shape = (IMAGE_SIZE, IMAGE_SIZE, 1)  # input image shape
 learning_rate = 0.000001
-weight_decay =  0.001
-batch_size = 35
-num_epochs = 200
+weight_decay =  0.00001
+batch_size = 250
+num_epochs = 1000
 
 
 start_time = time.perf_counter()
@@ -50,9 +50,9 @@ def read_lidc_dataset(normalization_func=lambda x: x, box_reader=lambda bbox: (i
     images = []
     annotations = []
 
-    for i in range(1, 4):
-        images_1 = load_ds(-1, 0, 1, 'img-consensus-pt-' + str(i))
-        annotations_1 = load_ds(-1, 0, 1, 'ann6-consensus-pt-' + str(i))
+    for i in range(0, 10):
+        images_1 = load_ds(IMAGE_SIZE, 0, 1, 'images-pt-' + str(i))
+        annotations_1 = load_ds(IMAGE_SIZE, 0, 1, 'annotations-pt-' + str(i))
         images, annotations = populate_data(normalization_func, box_reader, images, annotations, images_1, annotations_1)
 
     images, annotations = shuffle_data(images, annotations)
@@ -60,8 +60,11 @@ def read_lidc_dataset(normalization_func=lambda x: x, box_reader=lambda bbox: (i
     return images, annotations
 
 
-# normalize an LIDC-IDRI image to grayscale and resize it
 def normalize(im):
+    return im
+
+# normalize an LIDC-IDRI image to grayscale and resize it
+def normalize2(im):
 
     im = np.float32(im)
     # im[im < MIN_BOUND] = -1000
@@ -87,15 +90,15 @@ def normalize(im):
     #keras.utils.img_to_array(Image.fromarray(im, 'RGB'))
 
 def transform_bbox_normal(data):
-    #clazz = 0
-    #if(data[4] > 3):
-    #    clazz = 1
-    #ret = [0, 0]
-    #ret[clazz] = 1
-    #return ret
-    ret = [0, 0, 0, 0, 0]
-    ret[data[4]-1] = 1
+    clazz = 0
+    if(data[4] > 3):
+       clazz = 1
+    ret = [0, 0]
+    ret[clazz] = 1
     return ret
+    # ret = [0, 0, 0, 0, 0]
+    # ret[data[4]-1] = 1
+    # return ret
 
 
 images, annotations = read_lidc_dataset(normalize, transform_bbox_normal)
@@ -112,14 +115,14 @@ images, annotations = read_lidc_dataset(normalize, transform_bbox_normal)
 lidc_model = Sequential()
 base_model = resnet50.ResNet50(include_top=False,
                    input_shape=(224, 224, 3),
-                   pooling='avg', classes=5,
+                   pooling='avg', classes=2,
                    weights='imagenet')
 base_model.trainable = False
 lidc_model.add(base_model)
 lidc_model.add(Flatten())
 lidc_model.add(Dropout(DROP_OUT_1))
 lidc_model.add(Dense(224, activation='relu'))
-lidc_model.add(Dense(5, activation='softmax'))
+lidc_model.add(Dense(2, activation='softmax'))
 lidc_model.trainable = True
 
 file_name = "resnet50_model6_5classes.h5"

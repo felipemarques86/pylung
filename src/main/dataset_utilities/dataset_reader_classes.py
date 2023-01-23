@@ -1,8 +1,12 @@
 from abc import abstractmethod
+import os
+
+from main.common.config_classes import ConfigurableObject
 
 
-class Dataset:
+class Dataset(ConfigurableObject):
     def __init__(self, name, type) -> None:
+        super().__init__()
         self.name = name
         self.type = type
 
@@ -15,9 +19,13 @@ class DatasetTransformer:
     def execute(self, param):
         return self.function(param)
 
+    def walk(self, param):
+        self.function(param)
 
-class MutableCollectionReader:
-    def __init__(self) -> None:
+
+class MutableCollectionReader(ConfigurableObject):
+    def __init__(self):
+        super().__init__()
         self.dataset_image_transformers = []
         self.dataset_data_transformers = []
 
@@ -29,16 +37,20 @@ class MutableCollectionReader:
 
 
 class DatasetReader(MutableCollectionReader):
-    def __init__(self, dataset, location, part=0, max_parts=1) -> None:
+    def __init__(self, dataset, location, part=0, part_size=1, num_parts=0) -> None:
+        super().__init__()
+        if not os.path.exists(location):
+            raise Exception("The specified location " + location + " does not exist")
         self.dataset = dataset
         self.location = location
         self.images = None
         self.annotations = None
         self.part = part
-        self.max_parts = max_parts
+        self.part_size = part_size
+        self.num_parts = num_parts
 
     @abstractmethod
-    def load(self, dry_run=False):
+    def load(self, dry_run=False, walk=False):
         pass
 
     def shuffle_data(self):
@@ -49,6 +61,7 @@ class DatasetReader(MutableCollectionReader):
         images, annotations = list(res1), list(res2)
         self.images = images
         self.annotations = annotations
+
 
 
 class DataCollection(MutableCollectionReader):

@@ -2,11 +2,11 @@ import logging
 import unittest
 from pathlib import Path
 
-from main.dataset_utilities.lidc_dataset_reader import LidcDatasetReader
+from main.dataset_utilities.lidc_dataset_reader_classes import LidcDatasetReader
 
 logging.basicConfig(level=logging.DEBUG)
 
-class TestDataSetLoader(unittest.TestCase):
+class LidcDatasetReaderClassesTest(unittest.TestCase):
 
     def test_build_pre_processed(self):
         source_path = Path(__file__).resolve()
