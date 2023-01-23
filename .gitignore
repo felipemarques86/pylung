@@ -8,3 +8,12 @@
 /src/logs/checkpoint
 *.h5
 /data/
+/weights/
+/test/weights/
+/test/models/
+/logs/
+/logs/*.*
+/misc/
+/models/
+/src/runtime/logs/
+/src/runtime/logs/*.*
