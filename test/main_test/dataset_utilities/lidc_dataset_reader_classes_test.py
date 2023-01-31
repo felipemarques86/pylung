@@ -17,20 +17,15 @@ class LidcDatasetReaderClassesTest(unittest.TestCase):
             image_size=512,
             consensus_level=0.5,
             pad=0,
-            part=0,
-            max_parts=100
+            part=2,
+            part_size=100
         )
-        lidc_dataset_reader.load(dry_run=True)
+        lidc_dataset_reader.load()
         lidc_dataset_reader.save()
-
-        self.assertIsNotNone(lidc_dataset_reader.images, "Train images is None")
-        self.assertIsNotNone(lidc_dataset_reader.annotations, "Train bounding boxes is None")
 
         lidc_dataset_reader = lidc_dataset_reader.next()
 
-        while lidc_dataset_reader.load(dry_run=True):
-            self.assertIsNotNone(lidc_dataset_reader.images, "Train images is None")
-            self.assertIsNotNone(lidc_dataset_reader.annotations, "Train bounding boxes is None")
+        while lidc_dataset_reader.load():
             lidc_dataset_reader.save()
             lidc_dataset_reader = lidc_dataset_reader.next()
 

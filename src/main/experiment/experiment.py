@@ -12,7 +12,7 @@ from main.models.ml_model import MlModel
 
 class Experiment(ConfigurableObject):
 
-    def __init__(self, model: MlModel, learning_rate, weight_decay, batch_size, num_epochs, x, y, optimizer, validation_split, train_size) -> None:
+    def __init__(self, model: MlModel, learning_rate, weight_decay, batch_size, num_epochs, x, y, optimizer, validation_split, train_size, loss) -> None:
         super().__init__()
         self.model = model
         self.learning_rate = learning_rate
@@ -23,6 +23,7 @@ class Experiment(ConfigurableObject):
         self.validation_split = validation_split
         self.history = None
         self.name = self.generate_name()
+        self.loss = loss
 
         (self.x_train), (self.y_train) = (
             np.asarray(x[: int(len(x) * train_size)]),
@@ -44,7 +45,7 @@ class Experiment(ConfigurableObject):
         table.add_row(['Validation Split', self.validation_split])
         table.add_row(['X train size', len(self.x_train)])
         table.add_row(['X test size', len(self.x_test)])
-        table.add_row(['Loss', self.get_loss()])
+        table.add_row(['Loss', self.loss])
         return table
 
 
@@ -68,7 +69,7 @@ class Experiment(ConfigurableObject):
             model = self.model.model
 
 
-        if self.optimizer == 'AdaW':
+        if self.optimizer == 'AdamW':
             optimizer = tfa.optimizers.AdamW(
                 learning_rate=self.learning_rate, weight_decay=self.weight_decay
             )
@@ -81,7 +82,7 @@ class Experiment(ConfigurableObject):
                 learning_rate=self.learning_rate, momentum=0.001, nesterov=False, name='SGD'
             )
 
-        model.compile(optimizer=optimizer, loss=self.get_loss(), metrics=['accuracy'])
+        model.compile(optimizer=optimizer, loss=self.loss, metrics=['accuracy'])
 
         checkpoint_filepath = "../logs/"
         checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
@@ -105,16 +106,13 @@ class Experiment(ConfigurableObject):
         weights_path = self.config['DEFAULT']['weights_location'] + '/' + self.generate_name() + '---ID-' + str(round(time.time()*1000)) + '.h5'
         model.save(weights_path)
 
-    def get_loss(self):
-        return 'categorical_crossentropy'
-
 
 class ClassificationExperiment(Experiment):
 
     def __init__(self, model: MlModel, train_size, x, y, learning_rate=0, weight_decay=0, batch_size=0, num_epochs=0, optimizer=0,
-                 validation_split=0 ) -> None:
+                 validation_split=0, loss='categorical_crossentropy' ) -> None:
         super().__init__(model, learning_rate, weight_decay, batch_size, num_epochs, x, y, optimizer, validation_split,
-                         train_size)
+                         train_size, loss)
 
     def print_history(self):
         plt.plot(self.history.history['loss'])
@@ -183,11 +181,4 @@ class ClassificationExperiment(Experiment):
                 )
         plt.show()
 
-    def get_loss(self):
-        return 'binary_crossentropy'
 
-
-class DetectionExperiment(Experiment):
-
-    def get_loss(self):
-        return 'mean_absolute_percentage_error'

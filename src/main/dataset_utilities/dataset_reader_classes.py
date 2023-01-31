@@ -1,7 +1,11 @@
 from abc import abstractmethod
 import os
+import random
+
+from keras.applications.densenet import layers
 
 from main.common.config_classes import ConfigurableObject
+import tensorflow as tf
 
 
 class Dataset(ConfigurableObject):
@@ -16,8 +20,8 @@ class DatasetTransformer:
         super().__init__()
         self.function = function
 
-    def execute(self, param):
-        return self.function(param)
+    def execute(self, param1, param2=None):
+        return self.function(param1, param2)
 
     def walk(self, param):
         self.function(param)
@@ -39,6 +43,7 @@ class MutableCollectionReader(ConfigurableObject):
 class DatasetReader(MutableCollectionReader):
     def __init__(self, dataset, location, part=0, part_size=1, num_parts=0) -> None:
         super().__init__()
+        self.filter = None
         if not os.path.exists(location):
             raise Exception("The specified location " + location + " does not exist")
         self.dataset = dataset
@@ -50,7 +55,7 @@ class DatasetReader(MutableCollectionReader):
         self.num_parts = num_parts
 
     @abstractmethod
-    def load(self, dry_run=False, walk=False):
+    def load(self, iterative=False, walk=False):
         pass
 
     def shuffle_data(self):
@@ -62,7 +67,21 @@ class DatasetReader(MutableCollectionReader):
         self.images = images
         self.annotations = annotations
 
+    def augment(self, percentage=0.1, random_rotation=.5):
+        modify_image = tf.keras.Sequential([
+            layers.RandomFlip("horizontal_and_vertical"),
+            layers.RandomRotation(random_rotation)
+        ])
+        images_to_be_augmented = random.sample(range(0, len(self.images)), int(len(self.images)*percentage))
+        new_image = None
+        for i in images_to_be_augmented:
+            new_image = modify_image(tf.cast(tf.expand_dims(self.images[i], 0), tf.int32))
+            self.images.append(new_image[0])
+            self.annotations.append(self.annotations[i])
+        return new_image[0]
 
+    def filter_out(self, function):
+        self.filter = function
 
 class DataCollection(MutableCollectionReader):
     def __init__(self, name, images, annotations):

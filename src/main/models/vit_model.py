@@ -35,6 +35,7 @@ class VitModel(MlModel):
         table.add_row(["MLP Head Units", self.mlp_head_units])
         return table
 
+
     def process_loaded_model(self, model):
         self.transformer_layers = model.transformer_layers
         self.activation = model.activation

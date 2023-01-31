@@ -17,3 +17,5 @@
 /models/
 /src/runtime/logs/
 /src/runtime/logs/*.*
+*.sqlite3
+*.bat
