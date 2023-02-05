@@ -85,7 +85,7 @@ class LidcDatasetReader(DatasetReader):
                         B = cbbox[2].stop
                         k = int(0.5 * (B - A))
                         z = cbbox[2].start + k
-                        metadata = 'slice=' + str(z) + ",scan=" + str(scan.id) + ",annotations="
+                        metadata = 'centroid=' + str(z) + ',scan=' + str(scan.id)
                         if iterative:
                             print(a)
                             print(cbbox)
@@ -202,14 +202,16 @@ class CustomLidcDatasetReader(LidcDatasetReader):
             annotations = self.__load_ds(file_name_annotations)
 
             for i in range(0, len(images)):
-
+                ann = []
                 if self.filter is None or not self.filter(annotations[i]):
                     if len(self.dataset_data_transformers) > 0:
                         for j in range(0, len(self.dataset_data_transformers)):
                             if walk:
                                 self.dataset_data_transformers[j].walk(annotations[i])
                             else:
-                                self.annotations.append(self.dataset_data_transformers[j].execute(annotations[i], images[i]))
+                                ann = self.dataset_data_transformers[j].execute(annotations[i], images[i])
+                                if ann is not None:
+                                    self.annotations.append(ann)
                     else:
                         self.annotations.append(annotations[i])
 
@@ -220,7 +222,8 @@ class CustomLidcDatasetReader(LidcDatasetReader):
                             else:
                                 self.images.append(self.dataset_image_transformers[j].execute(images[i], annotations[i]))
                     else:
-                        self.images.append(images[i])
+                        if ann is not None:
+                            self.images.append(images[i])
         if len(self.images) == 0:
             error('Dataset has no images/data!')
             exit(-1)

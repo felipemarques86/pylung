@@ -3,6 +3,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
 from colorama import Fore, Style
+from matplotlib import pyplot as plt, patches
 
 LIDC_ANN_Y0 = 0
 LIDC_ANN_Y1 = 1
@@ -10,7 +11,7 @@ LIDC_ANN_X0 = 2
 LIDC_ANN_X1 = 3
 LIDC_ANN_ML = 4
 LIDC_ANN_SP = 5
-
+NORMALIZE = True
 
 def warning(message: str):
     print(f"{Fore.YELLOW}{Style.BRIGHT}[WARNING] {Style.RESET_ALL}{Fore.YELLOW}{message}{Style.RESET_ALL}")
@@ -26,37 +27,24 @@ def info(message: str):
 
 
 def get_data_transformer(data_transformer_name):
-    num_classes = None
-    data_transformer = None
-    loss = None
-    if data_transformer_name == 'binary_malignancy':
-        data_transformer = binary_malignancy
+    num_classes = 0
+    data_transformer = globals()[data_transformer_name]
+    loss = 'categorical_crossentropy'
+    if data_transformer_name.startswith('binary_'):
         num_classes = 1
-        loss = 'binary_crossentropy'
-    if data_transformer_name == 'binary_non_module':
-        data_transformer = binary_non_module
-        num_classes = 1
-        loss = 'binary_crossentropy'
-    elif data_transformer_name == 'six_one_hot_malignancy':
-        data_transformer = six_one_hot_malignancy
-        num_classes = 6
-        loss = 'categorical_crossentropy'
-    elif data_transformer_name == 'five_one_hot_malignancy':
-        data_transformer = five_one_hot_malignancy
-        num_classes = 5
-        loss = 'categorical_crossentropy'
-    elif data_transformer_name == 'two_one_hot_malignancy':
-        data_transformer = two_one_hot_malignancy
+    elif data_transformer_name.startswith('one_hot_two'):
         num_classes = 2
-        loss = 'categorical_crossentropy'
-    elif data_transformer_name == 'two_one_hot_non_module':
-        data_transformer = two_one_hot_non_module
-        num_classes = 2
-        loss = 'categorical_crossentropy'
-    elif data_transformer_name == 'bbox':
-        data_transformer = bbox
+    elif data_transformer_name.startswith('one_hot_three'):
+        num_classes = 3
+    elif data_transformer_name.startswith('one_hot_four'):
         num_classes = 4
-        loss = 'categorical_crossentropy'
+    elif data_transformer_name.startswith('one_hot_five'):
+        num_classes = 5
+    elif data_transformer_name.startswith('one_hot_six'):
+        num_classes = 6
+    else:
+        raise Exception(f'{data_transformer_name} not found!')
+
     return num_classes, data_transformer, loss
 
 
@@ -67,60 +55,171 @@ def filter_out_class0_malignancy(data):
     return data[LIDC_ANN_ML] == 0
 
 
+# Problem reduction functions - these functions determine which classes are going to be used and how they are grouped
+
+# Any image with ML != 0 is considered an image with nodule
 def binary_non_module(data, _):
     if data[LIDC_ANN_ML] == 0:
         return [0]
     return [1]
 
-def binary_malignancy(data, _):
+# Images with ML = [0,1,2] are BENIGN=[1, 0] and [3,4,5] are MALIGNANT=[0, 1]
+def one_hot_two_non_module(data, _):
+    if data[LIDC_ANN_ML] > 0:
+        return [0, 1]  # malignant
+    return [1, 0]
+
+# Images with ML = [0,1,2] are BENIGN=[0] and [3,4,5] are MALIGNANT=[1]
+def binary_malignancy_3benign(data, _):
     clazz = 0
     if data[LIDC_ANN_ML] > 3:
         clazz = 1
-    ret = [0, 0]
-    ret[clazz] = 1
     return [clazz]
 
-def six_one_hot_malignancy(data, _):
+def one_hot_two_malignancy_3benign(data, _):
+    if data[LIDC_ANN_ML] > 3:
+        return [0, 1]  # malignant
+    return [1, 0]
+
+def binary_malignancy_cut0_3benign(data, _):
+    if data[LIDC_ANN_ML] == 0:
+        return None
+    clazz = 0
+    if data[LIDC_ANN_ML] > 3:
+        clazz = 1
+    return [clazz]
+
+def binary_malignancy_3malignant(data, _):
+    if data[LIDC_ANN_ML] > 2:
+        return [1]  # malignant
+    return [0]
+
+
+def one_hot_two_malignancy_3malignant(data, _):
+    if data[LIDC_ANN_ML] > 2:
+        return [0, 1]  # malignant
+    return [1, 0]
+
+def binary_malignancy_cut3(data, _):
+    if data[LIDC_ANN_ML] == 3:
+        return None
+    if data[LIDC_ANN_ML] > 2:
+        return [1]
+    return [0]
+
+def one_hot_two_malignancy_cut3(data, _):
+    if data[LIDC_ANN_ML] == 3:
+        return None
+    if data[LIDC_ANN_ML] > 2:
+        return [0, 1]
+    return [1, 0]
+
+def binary_malignancy_cut0and3(data, _):
+    if data[LIDC_ANN_ML] == 3 or data[LIDC_ANN_ML] == 0:
+        return None
+    if data[LIDC_ANN_ML] > 2:
+        return [1]  # malignant
+    return [0]
+
+def one_hot_two_malignancy_cut0and3(data, _):
+    if data[LIDC_ANN_ML] == 3 or data[LIDC_ANN_ML] == 0:
+        return None
+    if data[LIDC_ANN_ML] > 2:
+        return [0, 1] # malignant
+    return [1, 0]
+
+
+def binary_malignancy_cut0_3benign(data, _):
+    if data[LIDC_ANN_ML] == 0:
+        return None
+    if data[LIDC_ANN_ML] > 3:
+        return [1]  # malignant
+    return [0]
+
+
+def one_hot_two_malignancy_cut0_3benign(data, _):
+    if data[LIDC_ANN_ML] == 0:
+        return None
+    if data[LIDC_ANN_ML] > 3:
+        return [0, 1]  # malignant
+    return [1, 0]
+
+
+def binary_malignancy_cut0_3malignant(data, _):
+    if data[LIDC_ANN_ML] == 0:
+        return None
+    if data[LIDC_ANN_ML] > 2:
+        return [1]  # malignant
+    return [0]
+
+def one_hot_two_malignancy_cut0_3malignant(data, _):
+    if data[LIDC_ANN_ML] == 0:
+        return None
+    if data[LIDC_ANN_ML] > 2:
+        return [0, 1]  # malignant
+    return [1, 0]
+
+def one_hot_six(data, _):
     ret = [0, 0, 0, 0, 0, 0]
     ret[int(data[LIDC_ANN_ML]-1)] = 1
     return ret
 
+def one_hot_five(data, _):
+    ret = [0, 0, 0, 0, 0]
+    if data[LIDC_ANN_ML] == 0:
+        return ret
+    if data[LIDC_ANN_ML] == 1 or data[LIDC_ANN_ML] == 2:
+        return [0, 1, 0, 0, 0]
+    ret[int(data[LIDC_ANN_ML]-1)] = 1
+    return ret
 
-def five_one_hot_malignancy(data, _):
+def one_hot_five_cut0(data, _):
+    if data[LIDC_ANN_ML] == 0:
+        return None
     ret = [0, 0, 0, 0, 0]
     ret[int(data[LIDC_ANN_ML]-1)] = 1
     return ret
 
-def two_one_hot_malignancy(data, _):
-    ret = [0, 0]
-    clazz = 0
-    if data[LIDC_ANN_ML] > 3:
-        clazz = 1
-    ret[clazz] = 1
-    return ret
+def one_hot_five_cut3(data, _):
+    if data[LIDC_ANN_ML] == 3:
+        return None
+    if data[LIDC_ANN_ML] == 0:
+        return [0, 0, 0, 0, 0]
+    if data[LIDC_ANN_ML] == 1:
+        return [0, 1, 0, 0, 0]
+    elif data[LIDC_ANN_ML] == 2:
+        return [0, 0, 1, 0, 0]
+    elif data[LIDC_ANN_ML] == 4:
+        return [0, 0, 0, 1, 0]
+    else:
+        return [0, 0, 0, 0, 1]
 
-def two_one_hot_non_module(data, _):
-    ret = [0, 0]
-    clazz = 0
-    if data[LIDC_ANN_ML] > 0:
-        clazz = 1
-    ret[clazz] = 1
-    return ret
+def one_hot_four(data, _):
+    ret = [0, 0, 0, 0]
+    if data[LIDC_ANN_ML] == 0:
+        return ret
+    if data[LIDC_ANN_ML] == 1 or data[LIDC_ANN_ML] == 2:
+        return [0, 1, 0, 0]
+    elif data[LIDC_ANN_ML] == 3 or data[LIDC_ANN_ML] == 4:
+        return [0, 0, 1, 0]
+    else:
+        return [0, 0, 0, 1]
+
+def one_hot_four_cut0and3(data, _):
+    if data[LIDC_ANN_ML] == 3 or data[LIDC_ANN_ML] == 0:
+        return None
+    if data[LIDC_ANN_ML] == 1:
+        return [1, 0, 0, 0]
+    if data[LIDC_ANN_ML] == 2:
+        return [0, 1, 0, 0]
+    elif data[LIDC_ANN_ML] == 4:
+        return [0, 0, 1, 0]
+    else:
+        return [0, 0, 0, 1]
 
 def bbox(data, _):
     return data[LIDC_ANN_Y0], data[LIDC_ANN_Y1], data[LIDC_ANN_X0], data[LIDC_ANN_X1],
 
-
-# def resize_color(image, annotation):
-#     image = np.float32(image)
-#     im = cv2.resize(image[annotation[LIDC_ANN_Y0]:annotation[LIDC_ANN_Y1], annotation[LIDC_ANN_X0]:annotation[LIDC_ANN_X1]], (IMAGE_SIZE, IMAGE_SIZE))
-#     im = cv2.cvtColor(im, cv2.COLOR_GRAY2RGB)
-#     return np.int16(im)
-#
-# def resize(image, annotation):
-#     image = np.float32(image)
-#     im = cv2.resize(image[annotation[LIDC_ANN_Y0]:annotation[LIDC_ANN_Y1], annotation[LIDC_ANN_X0]:annotation[LIDC_ANN_X1]], (IMAGE_SIZE, IMAGE_SIZE))
-#     return np.int16(im)
 
 def get_optimizer(name, learning_rate, weight_decay, momentum):
     if name == 'AdamW':
@@ -132,13 +231,19 @@ def get_optimizer(name, learning_rate, weight_decay, momentum):
             learning_rate=learning_rate, momentum=momentum, nesterov=False, name='SGD')
 
 
-def img_transformer(image_size, channels, crop_image):
+def img_transformer(image_size, channels, isolate_nodule_image):
     def resize(image, annotation):
         image = np.float32(image)
-        if crop_image and (annotation[LIDC_ANN_Y0] != 0 or annotation[LIDC_ANN_Y1] != 0 or annotation[LIDC_ANN_X0] != 0 or annotation[LIDC_ANN_X1] != 0):
+        if NORMALIZE:
+            image[image < -1000] = -1000
+            image[image > 600] = 600
+            image = (image + 1000) / (600 + 1000)
+            image = image * 255
+
+        if isolate_nodule_image and (annotation[LIDC_ANN_Y0] != 0 or annotation[LIDC_ANN_Y1] != 0 or annotation[LIDC_ANN_X0] != 0 or annotation[LIDC_ANN_X1] != 0):
             im = cv2.resize(image[annotation[LIDC_ANN_Y0]:annotation[LIDC_ANN_Y1], annotation[LIDC_ANN_X0]:annotation[LIDC_ANN_X1]], (image_size, image_size))
-        elif crop_image and annotation[LIDC_ANN_Y0] == 0 and annotation[LIDC_ANN_Y1] == 0 and annotation[LIDC_ANN_X0] == 0 and annotation[LIDC_ANN_X1] != 0:
-            error('No image to be cropped')
+        elif isolate_nodule_image and annotation[LIDC_ANN_Y0] == 0 and annotation[LIDC_ANN_Y1] == 0 and annotation[LIDC_ANN_X0] == 0 and annotation[LIDC_ANN_X1] == 0:
+            error('No image to be cropped. Please only "cut0" type of problem reduction function!')
             exit(-1)
         else:
             im = cv2.resize(image, (image_size, image_size))
@@ -146,3 +251,57 @@ def img_transformer(image_size, channels, crop_image):
             im = cv2.cvtColor(im, cv2.COLOR_GRAY2RGB)
         return np.int16(im)
     return resize
+
+
+def shuffle_data(images, annotations):
+    images_annotations = list(zip(images, annotations))
+    import random
+    random.shuffle(images_annotations)
+    res1, res2 = zip(*images_annotations)
+    images, annotations = list(res1), list(res2)
+    return images, annotations
+
+
+def display_image(image, annotations, N=1):
+    for k in range(0, N):
+        fig, ax1 = plt.subplots(1, 1, figsize=(15, 15))
+        ax1.imshow(image[k], cmap=plt.cm.gray)
+        data = '-'
+        for i in range(0, len(annotations[k])):
+            data = data + str(annotations[k][i]) + '-'
+
+        ax1.set_xlabel("Data: " + data)
+        plt.show()
+
+
+def display_original_image_bbox(image, annotations):
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 15))
+    # Display the image
+    ax1.imshow(image, cmap=plt.cm.gray)
+    ax2.imshow(image[int(annotations[0]):int(annotations[1]), int(annotations[2]):int(annotations[3])],
+               cmap=plt.cm.gray)
+    rect = patches.Rectangle(
+        (int(annotations[2]), int(annotations[0])),
+        int(annotations[3] - annotations[2]),
+        int(annotations[1] - annotations[0]),
+        facecolor="none",
+        edgecolor="red",
+        linewidth=2,
+    )
+    # Add the bounding box to the image
+    ax1.add_patch(rect)
+    ax1.set_xlabel(
+        "Original Data: "
+        + str(int(annotations[2]))
+        + ", "
+        + str(int(annotations[0]))
+        + ", "
+        + str(int(annotations[3]))
+        + ", "
+        + str(int(annotations[1]))
+        + "\n"
+        + str(annotations[4])
+        + ", "
+        + str(annotations[5])
+    )
+    plt.show()

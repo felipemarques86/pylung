@@ -6,7 +6,7 @@ import time
 import optuna
 import typer
 from colorama import init as colorama_init
-from optuna.samplers import NSGAIISampler
+from optuna.samplers import TPESampler
 from prettytable import PrettyTable
 
 from main.dataset_utilities.dataset_reader_classes import DatasetTransformer
@@ -15,8 +15,8 @@ from main.experiment.experiment import ClassificationExperiment
 from main.experiment.experiment_utilities import build_classification_objective, get_ds
 from main.models.resnet_model import ResNet50Model
 from main.models.vit_model import VitModel
-from main.utilities.utilities_lib import warning, error, info, binary_malignancy, five_one_hot_malignancy, \
-    two_one_hot_malignancy, bbox, get_data_transformer
+from main.utilities.utilities_lib import warning, error, info, get_data_transformer, display_original_image_bbox, \
+    display_image
 
 config = configparser.ConfigParser()
 app = typer.Typer()
@@ -152,6 +152,21 @@ def datasets(_type: str):
         ds_config.read(directory + '/' + folder + '/config.ini')
         print_config(ds_config)
 
+@app.command("get_image")
+def get_image_data(dataset_name: str, _type: str, index: int = -1):
+    directory = config['DATASET'][f'processed_{_type}_location']
+    dataset_reader = CustomLidcDatasetReader(location=directory + '/' + dataset_name + '/')
+    dataset_reader.load_custom()
+    if index < 0:
+        print(dataset_reader.export_as_table())
+        print(f'Count: {len(dataset_reader.images)}')
+
+    else:
+        image = dataset_reader.images[index]
+        annotations = dataset_reader.annotations[index]
+
+        display_original_image_bbox(image, annotations)
+
 
 @app.command("models")
 def models():
@@ -172,7 +187,7 @@ def models():
 def train_classification(dataset_name: str, dataset_type: str, model_name: str, learning_rate: float,
                          weight_decay: float,
                          batch_size: int, num_epochs: int, optimizer: str, validation_split: float, train_size: float,
-                         loss: str, labels: str = '', data_transformer: str = 'binary_malignancy'):
+                         labels: str = '', data_transformer: str = 'binary_malignancy'):
     ds_root_folder = config['DATASET'][f'processed_{dataset_type}_location']
     models_root_folder = config['DEFAULT']['models_location']
 
@@ -207,27 +222,7 @@ def train_classification(dataset_name: str, dataset_type: str, model_name: str, 
     dataset_reader = None
     if dataset_type == 'lidc_idri':
         dataset_reader = CustomLidcDatasetReader(location=ds_root_folder + '/' + ds_folder + '/')
-        data_transformer_func = None
-        if data_transformer == 'binary_malignancy':
-            if model.num_classes != 1:
-                error(f'Number of classes must be 1 for this type of data transformer')
-                exit(-1)
-            data_transformer_func = DatasetTransformer(function=binary_malignancy)
-        elif data_transformer == 'five_one_hot_malignancy':
-            if model.num_classes != 2:
-                error(f'Number of classes must be 2 for this type of data transformer')
-                exit(-1)
-            data_transformer_func = DatasetTransformer(function=five_one_hot_malignancy)
-        elif data_transformer == 'two_one_hot_malignancy':
-            if model.num_classes != 2:
-                error(f'Number of classes must be 2 for this type of data transformer')
-                exit(-1)
-            data_transformer_func = DatasetTransformer(function=two_one_hot_malignancy)
-        elif data_transformer == 'bbox':
-            if model.num_classes != 4:
-                error(f'Number of classes must be 4 for this type of data transformer')
-                exit(-1)
-            data_transformer_func = DatasetTransformer(function=bbox)
+        _, data_transformer_func, loss = get_data_transformer(data_transformer)
 
         dataset_reader.dataset_data_transformers.append(data_transformer_func)
         info('Data set being used')
@@ -326,19 +321,39 @@ def get_model(model_name, models_root_folder):
 
 @app.command("study")
 def study(batch_size: int, epochs: int, train_size: float, image_size: int, model_type: str, n_trials: int,
-          data_transformer_name: str, data_set,  croptumor: bool=True):
-    optuna_study = optuna.create_study(storage="sqlite:///01_2023.sqlite3", direction="maximize",
-                                       study_name=f'{model_type}-{data_set}-{batch_size}-{epochs}-{train_size}-{image_size}-{n_trials}-{data_transformer_name}-{croptumor}-{time.time()}',
-                                       sampler=NSGAIISampler(
-        population_size=50,
-        mutation_prob=0.001,
-        crossover_prob=0.01,
-        swapping_prob=0.0001
-    ))
+          data_transformer_name: str, data_set, shuffle: bool=True, isolate_nodule_image: bool=True):
+    optuna_study = optuna.create_study(storage="sqlite:///02_2023_normalized.sqlite3", direction="maximize",
+                                       study_name=f'{model_type}-{data_set}-{batch_size}-{epochs}-{train_size}-{image_size}-{n_trials}-{data_transformer_name}-{isolate_nodule_image}-{time.time()}',
+                                       sampler=TPESampler())
+
+    table = PrettyTable(['Parameter', 'Value'])
+
+    table.add_row(['Model Type', model_type])
+    table.add_row(['Batch Size', str(batch_size)])
+    table.add_row(['Epochs', str(epochs)])
+    table.add_row(['Train Size', str(train_size)])
+    table.add_row(['Image Size', str(image_size)])
+    table.add_row(['N Trials', str(n_trials)])
+    table.add_row(['Problem reduction function', data_transformer_name])
+    table.add_row(['Dataset Name', data_set])
+    table.add_row(['Shuffle?', str(shuffle)])
+    table.add_row(['Isolate Nodule image', str(isolate_nodule_image)])
+
+    print(table)
+    warning('Please confirm the information above.')
+    i = input('Press any key to continue or type "exit" to finish: ')
+    if i.lower() == 'exit':
+        exit(0)
+
 
     num_classes, data_transformer, loss = get_data_transformer(data_transformer_name)
 
-    data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size, ds=data_set, crop_tumor=croptumor, channels=1)
+    info(f'Loading dataset...')
+    data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size, ds=data_set, isolate_nodule_image=isolate_nodule_image, channels=1, shuffle=shuffle)
+    display_image(data[0], data[2], 10)
+    info(f'Dataset loaded with {len(data[0])} images for training and {len(data[1])} images for validation.')
+
+
 
     objective = build_classification_objective(model_type=model_type, image_size=image_size, batch_size=batch_size,
                                                num_classes=num_classes, loss=loss, epochs=epochs, data=data)

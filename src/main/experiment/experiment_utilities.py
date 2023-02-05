@@ -11,16 +11,22 @@ from main.utilities.utilities_lib import img_transformer, get_optimizer, LIDC_AN
 from vit.vit_tensorflow.cait import CaiT
 
 
-def get_ds(config, crop_tumor, train_size, image_size, channels, data_transformer, ds):
+def get_ds(config, isolate_nodule_image, train_size, image_size, channels, data_transformer, ds, shuffle):
     ds_root_folder = config['DATASET'][f'processed_lidc_idri_location']
     dataset_reader = CustomLidcDatasetReader(location=ds_root_folder + f'/{ds}/')
-    dataset_reader.dataset_data_transformers.append(DatasetTransformer(function=data_transformer))
-    dataset_reader.dataset_image_transformers.append(
-        DatasetTransformer(function=img_transformer(image_size, channels, crop_tumor)))
-    dataset_reader.load_custom()
-    if crop_tumor:
+    if isolate_nodule_image:
         dataset_reader.filter_out(lambda data: data[LIDC_ANN_Y0] == 0 and data[LIDC_ANN_Y1] == 0 and
                                                data[LIDC_ANN_X0] == 0 and data[LIDC_ANN_X1] == 0)
+
+    dataset_reader.dataset_data_transformers.append(DatasetTransformer(function=data_transformer))
+    dataset_reader.dataset_image_transformers.append(
+        DatasetTransformer(function=img_transformer(image_size, channels, isolate_nodule_image)))
+    dataset_reader.load_custom()
+
+    if shuffle:
+        dataset_reader.shuffle_data()
+
+
     x = dataset_reader.images
     y = dataset_reader.annotations
     (x_train), (y_train) = (
@@ -33,7 +39,7 @@ def get_ds(config, crop_tumor, train_size, image_size, channels, data_transforme
     )
     dataset_reader.images = x_train
     dataset_reader.annotations = y_train
-    # dataset_reader.augment(augmentation_size, augmentation_image_rotation)
+    dataset_reader.augment(0.2, 0.3)
     (x_train), (y_train) = (
         np.asarray(dataset_reader.images),
         np.asarray(dataset_reader.annotations),
@@ -107,7 +113,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         drop_out_2 = trial.suggest_float("Drop Out 2", 0.01, 0.3, log=True)
         drop_out_3 = trial.suggest_float("Drop Out 3", 0.01, 0.2, log=True)
         transformer_layers = trial.suggest_int("Num. Transformer layers", 2, 16, 2)
-        patch_size = trial.suggest_categorical("Patch Size", [8, 16])
+        patch_size = trial.suggest_categorical("Patch Size", [3, 4, 8, 16])
         activation = trial.suggest_categorical("Activation", ['softmax', 'sigmoid', 'softplus', 'tanh'])
         weight = trial.suggest_float("Weight", 1e-8, 1e-1, log=True)
         momentum = trial.suggest_float("Momentum", 1e-8, 1e-1, log=True)
