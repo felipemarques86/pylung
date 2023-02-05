@@ -350,7 +350,7 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
 
     info(f'Loading dataset...')
     data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size, ds=data_set, isolate_nodule_image=isolate_nodule_image, channels=1, shuffle=shuffle)
-    display_image(data[0], data[2], 10)
+    #display_image(data[0], data[2], 10)
     info(f'Dataset loaded with {len(data[0])} images for training and {len(data[1])} images for validation.')
 
 
