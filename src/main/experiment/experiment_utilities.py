@@ -1,6 +1,8 @@
 import numpy as np
+from keras import Model
 from keras.backend import clear_session
 from optuna.integration import KerasPruningCallback
+from tensorflow import metrics
 
 from main.dataset_utilities.dataset_reader_classes import DatasetTransformer
 from main.dataset_utilities.lidc_dataset_reader_classes import CustomLidcDatasetReader
@@ -47,7 +49,7 @@ def get_ds(config, isolate_nodule_image, train_size, image_size, channels, data_
     return x_train, x_valid, y_train, y_valid
 
 
-def build_classification_objective(model_type, image_size, batch_size, epochs, num_classes, loss, data):
+def build_classification_objective(model_type, image_size, batch_size, epochs, num_classes, loss, data, metrics):
     def _resnet50_classify(trial):
         # Clear clutter from previous Keras session graphs.
         clear_session()
@@ -55,12 +57,10 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         # We compile our model with a sampled learning rate.
         learning_rate = trial.suggest_float("Learning Rate", 1e-6, 1e-1, log=True)
         drop_out = trial.suggest_float("Drop Out", 0.1, 0.6, log=True)
-        activation = trial.suggest_categorical("activation", ['softmax', 'sigmoid', 'softplus', 'tanh'])
+        activation = trial.suggest_categorical("activation", ['softmax', 'sigmoid'])
         weight = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
         momentum = trial.suggest_float("Momentum", 1e-7, 1e-1, log=True)
         optimizer = trial.suggest_categorical("Optimizer", ['AdamW', 'SGDW', 'SGD'])
-        # augmentation_size = trial.suggest_float("Augmentation size (%)", 0.2, 0.5, log=True)
-        # augmentation_image_rotation = trial.suggest_float("Augmentation Image rotation (dg)", 0.1, 0.7, log=True)
 
         x_train, x_valid, y_train, y_valid = data
 
@@ -83,7 +83,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         model.compile(
             loss=loss,
             optimizer=get_optimizer(optimizer, learning_rate=learning_rate, weight_decay=weight, momentum=momentum),
-            metrics=["accuracy"],
+            metrics=metrics,
         )
 
         model.fit(
@@ -99,6 +99,8 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
 
         # Evaluate the model accuracy on the validation set.
         score = model.evaluate(x_valid, y_valid, verbose=0)
+        print(score)
+        print(model.metrics_names)
         return score[1]
 
     def _vit_classify_objective(trial):
@@ -113,13 +115,11 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         drop_out_2 = trial.suggest_float("Drop Out 2", 0.01, 0.3, log=True)
         drop_out_3 = trial.suggest_float("Drop Out 3", 0.01, 0.2, log=True)
         transformer_layers = trial.suggest_int("Num. Transformer layers", 2, 16, 2)
-        patch_size = trial.suggest_categorical("Patch Size", [3, 4, 8, 16])
-        activation = trial.suggest_categorical("Activation", ['softmax', 'sigmoid', 'softplus', 'tanh'])
+        patch_size = trial.suggest_categorical("Patch Size", [4, 8, 16])
+        activation = trial.suggest_categorical("Activation", ['softmax', 'sigmoid'])
         weight = trial.suggest_float("Weight", 1e-8, 1e-1, log=True)
         momentum = trial.suggest_float("Momentum", 1e-8, 1e-1, log=True)
         optimizer = trial.suggest_categorical("Optimizer", ['AdamW', 'SGDW', 'SGD'])
-        # augmentation_size = trial.suggest_float("Augmentation size (%)", 0.1, 0.4, log=True)
-        # augmentation_image_rotation = trial.suggest_float("Augmentation Image rotation (dg)", 0.01, 0.3, log=True)
 
         x_train, x_valid, y_train, y_valid = data
 
@@ -142,12 +142,12 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
 
         vit_model.build_model()
 
-        model = vit_model.model
+        model: Model = vit_model.model
 
         model.compile(
             loss=loss,
             optimizer=get_optimizer(optimizer, learning_rate=learning_rate, weight_decay=weight, momentum=momentum),
-            metrics=["accuracy"],
+            metrics=metrics,
         )
 
         model.fit(
@@ -155,7 +155,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             y_train,
             validation_data=(x_valid, y_valid),
             shuffle=True,
-            callbacks=[KerasPruningCallback(trial, "val_accuracy")],
+            #callbacks=[KerasPruningCallback(trial, "val_accuracy")],
             batch_size=batch_size,
             epochs=epochs,
             verbose=False
@@ -163,6 +163,8 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
 
         # Evaluate the model accuracy on the validation set.
         score = model.evaluate(x_valid, y_valid, verbose=0)
+        print(score)
+        print(model.metrics_names)
         return score[1]
 
     def cait_classify(trial):
@@ -180,8 +182,6 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         depth = trial.suggest_int("Depth", 2, 16, 2)
         cls_depth = trial.suggest_int("CLS Depth", 2, 16, 2)
         patch_size = trial.suggest_categorical("Patch Size", [8, 16, 32])
-        # augmentation_size = trial.suggest_float("Augmentation size (%)", 0.1, 0.4, log=True)
-        # augmentation_image_rotation = trial.suggest_float("Augmentation Image rotation (dg)", 0.01, 0.3, log=True)
         weight = trial.suggest_float("Weight", 1e-8, 1e-1, log=True)
         momentum = trial.suggest_float("Momentum", 1e-8, 1e-1, log=True)
         optimizer = trial.suggest_categorical("Optimizer", ['AdamW', 'SGDW', 'SGD'])
@@ -205,7 +205,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         model.compile(
             loss=loss,
             optimizer=get_optimizer(optimizer, learning_rate=learning_rate, weight_decay=weight, momentum=momentum),
-            metrics=["accuracy"],
+            metrics=metrics,
         )
 
         model.fit(
@@ -221,6 +221,58 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
 
         # Evaluate the model accuracy on the validation set.
         score = model.evaluate(x_valid, y_valid, verbose=0)
+        print(score)
+        print(model.metrics_names)
+        return score[1]
+
+    def vgg16(trial):
+        from keras.applications.vgg16 import VGG16
+        from tensorflow import keras
+
+        # Clear clutter from previous Keras session graphs.
+        clear_session()
+
+        # We compile our model with a sampled learning rate.
+        learning_rate = trial.suggest_float("Learning Rate", 1e-6, 1e-1, log=True)
+        # drop_out = trial.suggest_float("Drop Out", 0.1, 0.6, log=True)
+        activation = trial.suggest_categorical("activation", ['softmax', 'sigmoid'])
+        weight = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
+        momentum = trial.suggest_float("Momentum", 1e-7, 1e-1, log=True)
+        optimizer = trial.suggest_categorical("Optimizer", ['SGD'])
+
+        x_train, x_valid, y_train, y_valid = data
+        shape = (image_size, image_size, 3)
+
+        base_model = VGG16(weights='imagenet', input_shape=shape, include_top=False)
+        base_model.trainable = True
+        inputs = keras.Input(shape=shape)
+        x = base_model(inputs, training=False)
+        x = keras.layers.GlobalAveragePooling2D()(x)
+        outputs = keras.layers.Dense(num_classes, activation=activation)(x)
+        model = keras.Model(inputs, outputs)
+        model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+
+        model.compile(
+            loss=loss,
+            optimizer=get_optimizer(optimizer, learning_rate=learning_rate, weight_decay=weight, momentum=momentum),
+            metrics=metrics,
+        )
+
+        model.fit(
+            x_train,
+            y_train,
+            validation_data=(x_valid, y_valid),
+            shuffle=True,
+            callbacks=[KerasPruningCallback(trial, "val_accuracy")],
+            batch_size=batch_size,
+            epochs=epochs,
+            verbose=False
+        )
+
+        # Evaluate the model accuracy on the validation set.
+        score = model.evaluate(x_valid, y_valid, verbose=0)
+        print(score)
+        print(model.metrics_names)
         return score[1]
 
     if model_type == 'vit':
@@ -229,5 +281,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         return _resnet50_classify
     if model_type == 'cait':
         return cait_classify
+    if model_type == 'vgg16':
+        return vgg16
 
     return None

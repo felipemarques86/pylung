@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+# from tensorflow.keras import metrics
 import tensorflow as tf
 import tensorflow_addons as tfa
 from colorama import Fore, Style
@@ -12,6 +13,12 @@ LIDC_ANN_X1 = 3
 LIDC_ANN_ML = 4
 LIDC_ANN_SP = 5
 NORMALIZE = True
+ALPHA_NAMES = ['Alpha','Bravo','Charlie','Delta','Echo','Foxtrot','Golf','Hotel','India','Juliett','Kilo','Lima','Mike',
+               'November','Oscar','Papa','Quebec','Romeo','Sierra','Tango','Uniform','Victor','Whiskey','X-ray',
+               'Yankee','Zulu']
+ANIMALS_NAMES = ['Caracal', 'Cheetah', 'Eland', 'Giraffe', 'Zebra', 'Hartebeest', 'Impala', 'Jackal', 'Leopard',
+                 'Lion', 'Ostrich', 'Rhinoceros', 'Hyena', 'Warthog', 'Wildebeest', 'Flamingo', 'Gecko', 'Tortoise',
+                 'Crocodile', 'Mongoose', 'Gazelle', 'Stork', 'Meerkat', 'Elephant']
 
 def warning(message: str):
     print(f"{Fore.YELLOW}{Style.BRIGHT}[WARNING] {Style.RESET_ALL}{Fore.YELLOW}{message}{Style.RESET_ALL}")
@@ -27,25 +34,42 @@ def info(message: str):
 
 
 def get_data_transformer(data_transformer_name):
-    num_classes = 0
+    metrics = []
     data_transformer = globals()[data_transformer_name]
     loss = 'categorical_crossentropy'
     if data_transformer_name.startswith('binary_'):
         num_classes = 1
+        loss = 'binary_crossentropy'
+        metrics = [tf.keras.metrics.BinaryAccuracy()]
     elif data_transformer_name.startswith('one_hot_two'):
         num_classes = 2
+        metrics.append("accuracy")
     elif data_transformer_name.startswith('one_hot_three'):
         num_classes = 3
+        metrics.append("accuracy")
     elif data_transformer_name.startswith('one_hot_four'):
         num_classes = 4
+        metrics.append("accuracy")
     elif data_transformer_name.startswith('one_hot_five'):
         num_classes = 5
+        metrics.append("accuracy")
     elif data_transformer_name.startswith('one_hot_six'):
         num_classes = 6
+        metrics.append("accuracy")
     else:
         raise Exception(f'{data_transformer_name} not found!')
 
-    return num_classes, data_transformer, loss
+    metrics.append(tf.keras.metrics.FalsePositives())
+    metrics.append(tf.keras.metrics.FalseNegatives())
+    metrics.append(tf.keras.metrics.TrueNegatives())
+    metrics.append(tf.keras.metrics.TruePositives())
+
+    #metrics.append(tf.keras.metrics.Precision())
+    #metrics.append(tf.keras.metrics.AUC())
+    #metrics.append("loss")
+
+
+    return num_classes, data_transformer, loss, metrics
 
 
 def filter_out_class3_malignancy(data):
@@ -252,6 +276,10 @@ def img_transformer(image_size, channels, isolate_nodule_image):
         return np.int16(im)
     return resize
 
+def get_channels(model_type):
+    if model_type == 'vit' or model_type == 'cait':
+        return 1
+    return 3
 
 def shuffle_data(images, annotations):
     images_annotations = list(zip(images, annotations))
@@ -305,3 +333,8 @@ def display_original_image_bbox(image, annotations):
         + str(annotations[5])
     )
     plt.show()
+
+
+def get_experiment_codename(pos: int):
+    pos2 = int(pos/len(ALPHA_NAMES))
+    return ALPHA_NAMES[pos % len(ALPHA_NAMES)] + ' ' + ANIMALS_NAMES[pos2]

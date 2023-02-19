@@ -16,7 +16,7 @@ from main.experiment.experiment_utilities import build_classification_objective,
 from main.models.resnet_model import ResNet50Model
 from main.models.vit_model import VitModel
 from main.utilities.utilities_lib import warning, error, info, get_data_transformer, display_original_image_bbox, \
-    display_image
+    display_image, get_experiment_codename, get_channels
 
 config = configparser.ConfigParser()
 app = typer.Typer()
@@ -321,10 +321,27 @@ def get_model(model_name, models_root_folder):
 
 @app.command("study")
 def study(batch_size: int, epochs: int, train_size: float, image_size: int, model_type: str, n_trials: int,
-          data_transformer_name: str, data_set, shuffle: bool=True, isolate_nodule_image: bool=True):
-    optuna_study = optuna.create_study(storage="sqlite:///02_2023_normalized.sqlite3", direction="maximize",
-                                       study_name=f'{model_type}-{data_set}-{batch_size}-{epochs}-{train_size}-{image_size}-{n_trials}-{data_transformer_name}-{isolate_nodule_image}-{time.time()}',
+          data_transformer_name: str, data_set: str, db_name: str, shuffle: bool=True, isolate_nodule_image: bool=True):
+
+    study_counter = config['STUDY']['study_counter']
+    config['STUDY']['study_counter'] = str(int(config['STUDY']['study_counter']) + 1)
+    with open('config.ini', 'w') as configfile:
+        config.write(configfile)
+
+    optuna_study = optuna.create_study(storage=f'sqlite:///{db_name}.sqlite3', direction="maximize",
+                                       study_name=f'{str(get_experiment_codename(int(study_counter)+1))}',
                                        sampler=TPESampler())
+
+    optuna_study.set_user_attr('batch_size', batch_size)
+    optuna_study.set_user_attr('epochs', epochs)
+    optuna_study.set_user_attr('train_size', train_size)
+    optuna_study.set_user_attr('model_type', model_type)
+    optuna_study.set_user_attr('n_trials', n_trials)
+    optuna_study.set_user_attr('data_transformer_name', data_transformer_name)
+    optuna_study.set_user_attr('data_set', data_set)
+    optuna_study.set_user_attr('shuffle', shuffle)
+    optuna_study.set_user_attr('isolate_nodule_image', isolate_nodule_image)
+    optuna_study.set_user_attr('pylung_version', config['VERSION']['pylung_version'])
 
     table = PrettyTable(['Parameter', 'Value'])
 
@@ -340,23 +357,24 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
     table.add_row(['Isolate Nodule image', str(isolate_nodule_image)])
 
     print(table)
-    warning('Please confirm the information above.')
-    i = input('Press any key to continue or type "exit" to finish: ')
-    if i.lower() == 'exit':
-        exit(0)
+    #warning('Please confirm the information above.')
+    #i = input('Press any key to continue or type "exit" to finish: ')
+    #if i.lower() == 'exit':
+    #    exit(0)
 
 
-    num_classes, data_transformer, loss = get_data_transformer(data_transformer_name)
+    num_classes, data_transformer, loss, metrics = get_data_transformer(data_transformer_name)
 
     info(f'Loading dataset...')
-    data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size, ds=data_set, isolate_nodule_image=isolate_nodule_image, channels=1, shuffle=shuffle)
+    data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size, ds=data_set, isolate_nodule_image=isolate_nodule_image, channels=get_channels(model_type), shuffle=shuffle)
     #display_image(data[0], data[2], 10)
     info(f'Dataset loaded with {len(data[0])} images for training and {len(data[1])} images for validation.')
 
 
 
     objective = build_classification_objective(model_type=model_type, image_size=image_size, batch_size=batch_size,
-                                               num_classes=num_classes, loss=loss, epochs=epochs, data=data)
+                                               num_classes=num_classes, loss=loss, epochs=epochs, data=data,
+                                               metrics=metrics)
 
     optuna_study.optimize(objective, n_trials=n_trials) #, timeout=600)
 
