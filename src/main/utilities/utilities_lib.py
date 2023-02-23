@@ -302,7 +302,7 @@ def display_image(image, annotations, N=1):
         plt.show()
 
 
-def display_original_image_bbox(image, annotations):
+def display_original_image_bbox(image, annotations, extra_text=''):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 15))
     # Display the image
     ax1.imshow(image, cmap=plt.cm.gray)
@@ -331,6 +331,8 @@ def display_original_image_bbox(image, annotations):
         + str(annotations[4])
         + ", "
         + str(annotations[5])
+        + "\n"
+        + extra_text
     )
     plt.show()
 

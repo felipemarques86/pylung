@@ -202,24 +202,20 @@ class CustomLidcDatasetReader(LidcDatasetReader):
             annotations = self.__load_ds(file_name_annotations)
 
             for i in range(0, len(images)):
-                ann = []
+                ann = None
                 if self.filter is None or not self.filter(annotations[i]):
                     if len(self.dataset_data_transformers) > 0:
                         for j in range(0, len(self.dataset_data_transformers)):
-                            if walk:
-                                self.dataset_data_transformers[j].walk(annotations[i])
-                            else:
                                 ann = self.dataset_data_transformers[j].execute(annotations[i], images[i])
                                 if ann is not None:
                                     self.annotations.append(ann)
                     else:
+                        ann = annotations[i]
                         self.annotations.append(annotations[i])
 
                     if len(self.dataset_image_transformers) > 0:
                         for j in range(0, len(self.dataset_image_transformers)):
-                            if walk:
-                                self.dataset_image_transformers[j].walk(images[i])
-                            else:
+                            if ann is not None:
                                 self.images.append(self.dataset_image_transformers[j].execute(images[i], annotations[i]))
                     else:
                         if ann is not None:

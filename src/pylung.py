@@ -1,22 +1,21 @@
 import configparser
+import json
 import os
-import pickle
 import time
+from urllib.parse import parse_qs
+from urllib.parse import urlparse
 
+import numpy as np
 import optuna
 import typer
 from colorama import init as colorama_init
 from optuna.samplers import TPESampler
 from prettytable import PrettyTable
 
-from main.dataset_utilities.dataset_reader_classes import DatasetTransformer
 from main.dataset_utilities.lidc_dataset_reader_classes import LidcDatasetReader, CustomLidcDatasetReader
-from main.experiment.experiment import ClassificationExperiment
 from main.experiment.experiment_utilities import build_classification_objective, get_ds
-from main.models.resnet_model import ResNet50Model
-from main.models.vit_model import VitModel
 from main.utilities.utilities_lib import warning, error, info, get_data_transformer, display_original_image_bbox, \
-    display_image, get_experiment_codename, get_channels
+    get_experiment_codename, get_channels, img_transformer
 
 config = configparser.ConfigParser()
 app = typer.Typer()
@@ -97,52 +96,6 @@ def create_dataset(name: str, type: str, image_size: int = 512, consensus_level:
         error(f'Type {type} is currently not supported')
 
 
-@app.command("create_vit_model")
-def create_vit_model(name: str, version: int, patch_size: int, projection_dim: int, num_heads: int, dropout1: float,
-                     dropout2: float, dropout3: float, image_size: int, activation: str, num_clases: int,
-                     transformer_layers: int,
-                     image_channels: int):
-    vit_model = VitModel(
-        name=name,
-        version=version,
-        patch_size=patch_size,
-        projection_dim=projection_dim,
-        num_heads=num_heads,
-        mlp_head_units=[2048, 1024, 512, 64, 32],
-        dropout1=dropout1,
-        dropout2=dropout2,
-        dropout3=dropout3,
-        image_size=image_size,
-        activation=activation,
-        num_classes=num_clases,
-        transformer_layers=transformer_layers,
-        image_channels=image_channels
-    )
-
-    vit_model.save_model()
-    print(vit_model.export_as_table())
-    info(f'{name} model saved successfully')
-
-@app.command("create_restnet50_model")
-def create_restnet50_model(name: str, version: int, activation: str, num_clases: int, dropout: float,
-                     pooling: str, weights: str, image_channels: int):
-    model = ResNet50Model(
-            name=name,
-            version=version,
-            activation=activation,
-            num_classes=num_clases,
-            image_size=224,
-            dropout=dropout,
-            pooling=pooling,
-            weights=weights,
-            image_channels=image_channels
-        )
-
-    model.save_model()
-    print(model.export_as_table())
-    info(f'{name} model saved successfully')
-
-
 @app.command("datasets")
 def datasets(_type: str):
     directory = config['DATASET'][f'processed_{_type}_location']
@@ -167,169 +120,138 @@ def get_image_data(dataset_name: str, _type: str, index: int = -1):
 
         display_original_image_bbox(image, annotations)
 
-
-@app.command("models")
-def models():
-    directory = config['DEFAULT']['models_location']
-
-    def load_model(file):
-        with open(directory + '/' + file, 'rb') as filePointer:
-            return pickle.load(filePointer)
-
-    models = map(load_model, [fi for fi in os.listdir(directory) if fi.endswith(".model")])
-
-    for model in models:
-        print(model.export_as_table())
-        print('')
-
-
-@app.command("train_classification")
-def train_classification(dataset_name: str, dataset_type: str, model_name: str, learning_rate: float,
-                         weight_decay: float,
-                         batch_size: int, num_epochs: int, optimizer: str, validation_split: float, train_size: float,
-                         labels: str = '', data_transformer: str = 'binary_malignancy'):
-    ds_root_folder = config['DATASET'][f'processed_{dataset_type}_location']
-    models_root_folder = config['DEFAULT']['models_location']
-
-    def load_model(file):
-        with open(models_root_folder + '/' + file, 'rb') as filePointer:
-            return pickle.load(filePointer)
-
-    models_files = [fi for fi in os.listdir(models_root_folder) if fi.endswith(".model")]
-    model = None
-    for model_file in models_files:
-        model_ = load_model(model_file)
-        if model_.name == model_name:
-            model = model_
-            break
-
-    if model is None:
-        error(f'Model not found with the specified name {model_name}')
-        exit(-1)
-
-    info(f'Model being used')
-    print(model.export_as_table())
-
-    ds_folder = None
-    for folder in os.listdir(ds_root_folder):
-        if folder == dataset_name:
-            ds_folder = folder
-            break
-    if ds_folder is None:
-        error(f'No dataset was found with name {dataset_name}')
-        exit(-1)
-
-    dataset_reader = None
-    if dataset_type == 'lidc_idri':
-        dataset_reader = CustomLidcDatasetReader(location=ds_root_folder + '/' + ds_folder + '/')
-        _, data_transformer_func, loss = get_data_transformer(data_transformer)
-
-        dataset_reader.dataset_data_transformers.append(data_transformer_func)
-        info('Data set being used')
+@app.command("predict")
+def predict(dataset_name: str, _type: str, weight_file_name, index: int = -1):
+    directory = config['DATASET'][f'processed_{_type}_location']
+    dataset_reader = CustomLidcDatasetReader(location=directory + '/' + dataset_name + '/')
+    dataset_reader.load_custom()
+    if index < 0:
         print(dataset_reader.export_as_table())
-        dataset_reader.load_custom()
+        print(f'Count: {len(dataset_reader.images)}')
 
     else:
-        warning(f'{dataset_type} currently not supported')
-        exit(0)
+        image = dataset_reader.images[index]
+        annotations = dataset_reader.annotations[index]
+        json_data = None
+        with open(weight_file_name + '.json', 'r') as json_fp:
+            json_data = json.load(json_fp)
 
-    experiment = ClassificationExperiment(
-        model=model,
-        optimizer=optimizer,
-        batch_size=batch_size,
-        num_epochs=num_epochs,
-        train_size=train_size,
-        learning_rate=learning_rate,
-        validation_split=validation_split,
-        weight_decay=weight_decay,
-        x=dataset_reader.images,
-        y=dataset_reader.annotations,
-        loss=loss
-    )
-    info(f'Experiment data')
-    print(experiment.export_as_table())
+        _, data_transformer, _, metrics = get_data_transformer(json_data['data_transformer_name'])
 
-    experiment.train()
+        model_ = build_classification_objective(model_type=json_data['model_type'], image_size=json_data['image_size'], static_params=True,
+                                       metrics=metrics, code_name=json_data['code_name'], data_transformer_name=json_data['data_transformer_name'],
+                                       params=json_data['learning_params'], return_model_only=True, batch_size=json_data['batch_size'],
+                                       epochs=json_data['epochs'], num_classes=json_data['num_classes'], loss=json_data['loss'],
+                                       data=None
+        )
 
-@app.command("classify")
-def classify(dataset_name: str, dataset_type: str, model_name: str, weights_file_name: str, n_images: int = 10,
-             train_size: float = 0.8):
-    ds_root_folder = config['DATASET'][f'processed_{dataset_type}_location']
-    models_root_folder = config['DEFAULT']['models_location']
+        model = model_(None)
+        model.load_weights(weight_file_name + '.h5')
+        im = img_transformer(json_data['image_size'], json_data['image_channels'], True)(image, annotations)
+        print(im.shape)
+        output = model.predict(np.expand_dims(im, axis=0))
 
-    model = get_model(model_name, models_root_folder)
-
-    ds_folder = None
-    for folder in os.listdir(ds_root_folder):
-        if folder == dataset_name:
-            ds_folder = folder
-            break
-    if ds_folder is None:
-        error(f'No dataset was found with name {dataset_name}')
-        exit(-1)
-
-    dataset_reader = None
-    if dataset_type == 'lidc_idri':
-        dataset_reader = CustomLidcDatasetReader(location=ds_root_folder + '/' + ds_folder + '/')
-        if model.num_classes == 2:
-            def reduce_classes(data):
-                clazz = 0
-                if data[4] > 3:
-                    clazz = 1
-                ret = [0, 0]
-                ret[clazz] = 1
-                return ret
-
-            dataset_reader.dataset_data_transformers.append(DatasetTransformer(function=reduce_classes))
-            dataset_reader.load_custom()
-
-        else:
-            warning(f'{model.num_classes} classes are not currently supported')
-            exit(0)
-    else:
-        warning(f'{dataset_type} currently not supported')
-        exit(0)
-
-    experiment = ClassificationExperiment(
-        model=model,
-        train_size=train_size,
-        x=dataset_reader.images,
-        y=dataset_reader.annotations,
-    )
-
-    experiment.print_results_classification(
-        weights_location=config['DEFAULT']['weights_location'] + '/' + weights_file_name, n=n_images)
+        display_original_image_bbox(image, annotations,
+                                    'Predicted Value = ' + str(output[0]) + ', '
+                                    'Actual Value = ' + str(data_transformer(annotations, None)))
 
 
-def get_model(model_name, models_root_folder):
-    def load_model(file):
-        with open(models_root_folder + '/' + file, 'rb') as filePointer:
-            return pickle.load(filePointer)
+@app.command("drill_down")
+def drill_down(batch_size: int, epochs: int, study_file_path: str, train_size: float, data_set: str, load_weights: bool = False, isolate_nodule_image: bool = True):
+    json_object = None
+    weights_file = None
+    with open(study_file_path + '.json', 'r') as json_fp:
+        json_object = json.load(json_fp)
 
-    models_files = [fi for fi in os.listdir(models_root_folder) if fi.endswith(".model")]
-    model = None
-    for model_file in models_files:
-        model_ = load_model(model_file)
-        if model_.name == model_name:
-            model = model_
-            break
-    if model is None:
-        error(f'Model not found with the specified name {model_name}')
-        exit(-1)
-    return model
+    if load_weights:
+        weights_file = study_file_path + '.h5'
+
+    num_classes, data_transformer, loss, metrics = get_data_transformer(json_object['data_transformer_name'])
+
+    code_name = str(time.time_ns())
+
+    data = get_ds(config=config, data_transformer=data_transformer, image_size=json_object['image_size'],
+                  train_size=train_size, ds=data_set, isolate_nodule_image=isolate_nodule_image,
+                  channels=get_channels(json_object['model_type']))
+
+
+    table = PrettyTable(['Parameter', 'Value'])
+    table.add_row(['Code Name', code_name])
+    table.add_row(['Model Type', json_object['model_type']])
+    table.add_row(['Batch Size', str(batch_size)])
+    table.add_row(['Epochs', str(epochs)])
+    table.add_row(['Num Classes', str(num_classes)])
+    table.add_row(['Train Size', str(train_size)])
+    table.add_row(['Image Size', str(json_object['image_size'])])
+    table.add_row(['Problem reduction function', json_object['data_transformer_name']])
+    table.add_row(['Dataset Name', data_set])
+    table.add_row(['Isolate Nodule image', str(isolate_nodule_image)])
+    for i in json_object['learning_params']:
+        table.add_row([i,  json_object['learning_params'][i]])
+
+    print(table)
+
+    objective = build_classification_objective(model_type=json_object['model_type'], image_size=json_object['image_size'],
+                                               batch_size=batch_size,num_classes=num_classes, loss=loss, epochs=epochs, data=data,
+                                               metrics=metrics, save_weights=True, code_name=code_name,
+                                               static_params=True, params=json_object['learning_params'],
+                                               data_transformer_name=json_object['data_transformer_name'], weights_file=weights_file)
+
+    print(f'Accuracy = {objective(None)}')
+
+
+@app.command("train")
+def train(batch_size: int, epochs: int, train_size: float, image_size: int, model_type: str,
+          data_transformer_name: str, data_set: str, params: str, save_weights=True, isolate_nodule_image: bool=True):
+
+    parsed_url = urlparse('?' + params)
+    params_arr_ = parse_qs(parsed_url.query)
+    params_arr = []
+    for i in params_arr_:
+        params_arr[i] = params_arr_[i][0]
+
+    num_classes, data_transformer, loss, metrics = get_data_transformer(data_transformer_name)
+
+    code_name = str(time.time_ns())
+
+    data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size,
+                  ds=data_set, isolate_nodule_image=isolate_nodule_image, channels=get_channels(model_type))
+
+    table = PrettyTable(['Parameter', 'Value'])
+    table.add_row(['Code Name', code_name])
+    table.add_row(['Model Type', model_type])
+    table.add_row(['Batch Size', str(batch_size)])
+    table.add_row(['Epochs', str(epochs)])
+    table.add_row(['Num Classes', str(num_classes)])
+    table.add_row(['Train Size', str(train_size)])
+    table.add_row(['Image Size', str(image_size)])
+    table.add_row(['Problem reduction function', data_transformer_name])
+    table.add_row(['Dataset Name', data_set])
+    table.add_row(['Isolate Nodule image', str(isolate_nodule_image)])
+    for i in params_arr:
+        table.add_row([i, params_arr[i]])
+
+    print(table)
+
+    objective = build_classification_objective(model_type=model_type, image_size=image_size, batch_size=batch_size,
+                                               num_classes=num_classes, loss=loss, epochs=epochs, data=data,
+                                               metrics=metrics, save_weights=save_weights, code_name=code_name,
+                                               static_params=True, params=params_arr, data_transformer_name=data_transformer_name)
+    print(f'Accuracy = {objective(None)}')
 
 
 @app.command("study")
 def study(batch_size: int, epochs: int, train_size: float, image_size: int, model_type: str, n_trials: int,
-          data_transformer_name: str, data_set: str, db_name: str, shuffle: bool=True, isolate_nodule_image: bool=True):
+          data_transformer_name: str, data_set: str, db_name: str, isolate_nodule_image: bool=True):
 
     study_counter = config['STUDY']['study_counter']
     config['STUDY']['study_counter'] = str(int(config['STUDY']['study_counter']) + 1)
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
 
+    code_name = str(get_experiment_codename(int(study_counter)+1))
     optuna_study = optuna.create_study(storage=f'sqlite:///{db_name}.sqlite3', direction="maximize",
-                                       study_name=f'{str(get_experiment_codename(int(study_counter)+1))}',
+                                       study_name=f'{code_name}',
                                        sampler=TPESampler())
 
     optuna_study.set_user_attr('batch_size', batch_size)
@@ -339,7 +261,6 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
     optuna_study.set_user_attr('n_trials', n_trials)
     optuna_study.set_user_attr('data_transformer_name', data_transformer_name)
     optuna_study.set_user_attr('data_set', data_set)
-    optuna_study.set_user_attr('shuffle', shuffle)
     optuna_study.set_user_attr('isolate_nodule_image', isolate_nodule_image)
     optuna_study.set_user_attr('pylung_version', config['VERSION']['pylung_version'])
 
@@ -353,28 +274,22 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
     table.add_row(['N Trials', str(n_trials)])
     table.add_row(['Problem reduction function', data_transformer_name])
     table.add_row(['Dataset Name', data_set])
-    table.add_row(['Shuffle?', str(shuffle)])
     table.add_row(['Isolate Nodule image', str(isolate_nodule_image)])
 
     print(table)
-    #warning('Please confirm the information above.')
-    #i = input('Press any key to continue or type "exit" to finish: ')
-    #if i.lower() == 'exit':
-    #    exit(0)
-
 
     num_classes, data_transformer, loss, metrics = get_data_transformer(data_transformer_name)
 
     info(f'Loading dataset...')
-    data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size, ds=data_set, isolate_nodule_image=isolate_nodule_image, channels=get_channels(model_type), shuffle=shuffle)
-    #display_image(data[0], data[2], 10)
+    data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size, ds=data_set, isolate_nodule_image=isolate_nodule_image, channels=get_channels(model_type))
     info(f'Dataset loaded with {len(data[0])} images for training and {len(data[1])} images for validation.')
 
 
 
     objective = build_classification_objective(model_type=model_type, image_size=image_size, batch_size=batch_size,
                                                num_classes=num_classes, loss=loss, epochs=epochs, data=data,
-                                               metrics=metrics)
+                                               metrics=metrics, save_weights=True, code_name=code_name,
+                                               data_transformer_name=data_transformer_name)
 
     optuna_study.optimize(objective, n_trials=n_trials) #, timeout=600)
 
