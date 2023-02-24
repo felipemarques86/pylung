@@ -303,38 +303,50 @@ def display_image(image, annotations, N=1):
 
 
 def display_original_image_bbox(image, annotations, extra_text=''):
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 15))
-    # Display the image
-    ax1.imshow(image, cmap=plt.cm.gray)
-    ax2.imshow(image[int(annotations[0]):int(annotations[1]), int(annotations[2]):int(annotations[3])],
-               cmap=plt.cm.gray)
-    rect = patches.Rectangle(
-        (int(annotations[2]), int(annotations[0])),
-        int(annotations[3] - annotations[2]),
-        int(annotations[1] - annotations[0]),
-        facecolor="none",
-        edgecolor="red",
-        linewidth=2,
-    )
-    # Add the bounding box to the image
-    ax1.add_patch(rect)
-    ax1.set_xlabel(
-        "Original Data: "
-        + str(int(annotations[2]))
-        + ", "
-        + str(int(annotations[0]))
-        + ", "
-        + str(int(annotations[3]))
-        + ", "
-        + str(int(annotations[1]))
-        + "\n"
-        + str(annotations[4])
-        + ", "
-        + str(annotations[5])
-        + "\n"
-        + extra_text
-    )
-    plt.show()
+    if len(annotations) < 4 or annotations[0] == 0 and annotations[1] == 0:
+        fig, ax1 = plt.subplots(1, 1, figsize=(15, 15))
+        # Display the image
+        ax1.imshow(image, cmap=plt.cm.gray)
+        ax1.set_xlabel(
+            "Original Data: "
+            + str(annotations)
+            + "\n"
+            + extra_text
+        )
+        plt.show()
+    else:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 15))
+        # Display the image
+        ax1.imshow(image, cmap=plt.cm.gray)
+        ax2.imshow(image[int(annotations[0]):int(annotations[1]), int(annotations[2]):int(annotations[3])],
+                   cmap=plt.cm.gray)
+        rect = patches.Rectangle(
+            (int(annotations[2]), int(annotations[0])),
+            int(annotations[3] - annotations[2]),
+            int(annotations[1] - annotations[0]),
+            facecolor="none",
+            edgecolor="red",
+            linewidth=2,
+        )
+        # Add the bounding box to the image
+        ax1.add_patch(rect)
+        ax1.set_xlabel(
+            "Original Data: "
+            + str(int(annotations[2]))
+            + ", "
+            + str(int(annotations[0]))
+            + ", "
+            + str(int(annotations[3]))
+            + ", "
+            + str(int(annotations[1]))
+            + "\n"
+            + str(annotations[4])
+            + ", "
+            + str(annotations[5])
+            + "\n"
+            + extra_text
+        )
+        plt.show()
 
 
 def get_experiment_codename(pos: int):

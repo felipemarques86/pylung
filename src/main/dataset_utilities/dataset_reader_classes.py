@@ -1,11 +1,18 @@
+import sys
 from abc import abstractmethod
 import os
 import random
+from statistics import mean, variance, stdev
 
+import numpy as np
 from keras.applications.densenet import layers
+from numpy import empty
+from prettytable import PrettyTable
 
 from main.common.config_classes import ConfigurableObject
 import tensorflow as tf
+
+from main.utilities.utilities_lib import info
 
 
 class Dataset(ConfigurableObject):
@@ -62,8 +69,7 @@ class DatasetReader(MutableCollectionReader):
         all = list(zip(self.images, self.annotations))
         import random
         random.shuffle(all)
-        res1, res2 = zip(*all)
-        images, annotations = list(res1), list(res2)
+        images, annotations = zip(*all)
         self.images = images
         self.annotations = annotations
 
@@ -82,6 +88,96 @@ class DatasetReader(MutableCollectionReader):
 
     def filter_out(self, function):
         self.filter = function
+
+    def calculate_stats(self, images, annotations):
+        table = PrettyTable(['Parameter', 'Value'])
+        table.add_row(['Total images', len(images)])
+        table.add_row(['Total annotations', len(annotations)])
+        aggr = []
+        _mean = []
+        _variance = []
+        _std = []
+        _ann_max = []
+        _ann_min = []
+        for k in range(0, 10): # len(annotations[0])
+            aggr.append([])
+
+        _max = -sys.maxsize - 1
+        _min = sys.maxsize
+
+        for i in range(0, len(images)):
+            m = np.max(images[i])
+            n = np.min(images[i])
+            if m > _max:
+                _max = m
+            if n < _min:
+                _min = n
+            for j, a in enumerate(annotations[i]):
+                aggr[j].append(a)
+
+        table.add_row(['Max value of images', _max])
+        table.add_row(['Min value of images', _min])
+        table.add_row(['Example annotation', annotations[0]])
+
+        for a in aggr:
+            if len(a) > 1 and not isinstance(a[0], (str, bool)):
+                _ann_max.append(max(a))
+                _ann_min.append(min(a))
+                try:
+                    _mean.append(mean(a))
+                except:
+                    print(f'Cannot calculate mean')
+                    pass
+                if len(a) > 1:
+                    try:
+                        _variance.append(variance(a))
+                    except:
+                        print(f'Cannot calculate variance')
+                        pass
+                else:
+                    _variance.append('N/A')
+                if len(a) > 1:
+                    try:
+                        _std.append(stdev(a))
+                    except:
+                        print(f'Cannot calculate stdev')
+                        pass
+                else:
+                    _std.append('N/A')
+
+        table.add_row(['Annotations mean', _mean])
+        table.add_row(['Annotations max', _ann_max])
+        table.add_row(['Annotations min', _ann_min])
+        table.add_row(['Annotations standard deviation', _std])
+        table.add_row(['Annotations variance', _variance])
+
+        print(table)
+
+    def dump_to_file(self, data, file):
+        with open(file, 'w') as my_file:
+            for i in data:
+                np.savetxt(my_file, i)
+    def statistics(self, first=1.0, dump_annotations_to_file=False):
+
+        if first < 1.0:
+            (first_images), (first_annotations) = (
+                self.images[: int(len(self.images) * first)],
+                self.annotations[: int(len(self.annotations) * first)])
+            (last_images), (last_annotations) = (
+                np.asarray(self.images[int(len(self.images) * first):]),
+                np.asarray(self.annotations[int(len(self.annotations) * first):]))
+
+            info(f'Statistics for the first {first*100}% images')
+            self.calculate_stats(first_images, first_annotations)
+            self.dump_to_file(first_annotations, 'first_annotations.txt')
+
+            info(f'Statistics for the last {(1-first) * 100}% images')
+            self.calculate_stats(last_images, last_annotations)
+            self.dump_to_file(last_annotations, 'last_annotations.txt')
+
+        info(f'Statistics for all images')
+        self.calculate_stats(self.images, self.annotations)
+
 
 class DataCollection(MutableCollectionReader):
     def __init__(self, name, images, annotations):

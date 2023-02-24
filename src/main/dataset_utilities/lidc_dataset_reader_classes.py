@@ -70,8 +70,7 @@ class LidcDatasetReader(DatasetReader):
                 if nodules_count == 0:
                     for j in range(0, vol.shape[2]):
                         images.append(vol[:, :, j])
-                        metadata = 'slice=' + str(j) + ",scan=" + str(scan.id) + ",annotations=None"
-                        annotations.append((0, 0, 0, 0, 0, 0, metadata))
+                        annotations.append((0, 0, 0, 0, 0, 0, j, j, False))
                 else:
                     for j in range(0, nodules_count):
                         nodule = nodules[j]
@@ -84,61 +83,14 @@ class LidcDatasetReader(DatasetReader):
                         A = cbbox[2].start
                         B = cbbox[2].stop
                         k = int(0.5 * (B - A))
-                        z = cbbox[2].start + k
-                        metadata = 'centroid=' + str(z) + ',scan=' + str(scan.id)
-                        if iterative:
-                            print(a)
-                            print(cbbox)
-                            print(b)
-
-                            b = (y0, y1, x0, x1)
-                            for kk in range(0, A-1):
-                                fig, (ax1) = plt.subplots(1, 1, figsize=(15, 15))
-                                ax1.imshow(vol[:, :, int(kk)], cmap=plt.cm.gray)
-                                ax1.set_xlabel(f'(No-Nodule) Slice {kk}')
-                                plt.show()
-                            for ii in range(A, B):
-                                fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 15))
-                                ax1.imshow(vol[:, :, int(ii)], cmap=plt.cm.gray)
-                                ax2.imshow(vol[:, :, int(ii)][int(b[0]):int(b[1]), int(b[2]):int(b[3])], cmap=plt.cm.gray)
-                                rect = patches.Rectangle(
-                                    (int(b[2]), int(b[0])),
-                                    int(b[3] - b[2]),
-                                    int(b[1] - b[0]),
-                                    facecolor="none",
-                                    edgecolor="red",
-                                    linewidth=2,
-                                )
-                                if z == ii:
-                                    ax1.set_xlabel(f'(Nodule) CENTER {z}')
-                                else:
-                                    ax1.set_xlabel(f'(Nodule) Slice {ii}')
-                                # Add the bounding box to the image
-                                ax1.add_patch(rect)
-
-                                plt.show()
-
-                            for kk in range(B, vol.shape[2]):
-                                fig, (ax1) = plt.subplots(1, 1, figsize=(15, 15))
-                                ax1.imshow(vol[:, :, int(kk)], cmap=plt.cm.gray)
-                                ax1.set_xlabel(f'(No-Nodule) Slice {kk}')
-                                plt.show()
-
+                        centroid = cbbox[2].start + k
                         for x in range(A, B):
                             images.append(vol[:, :, x])
-                            annotations.append((y0, y1, x0, x1, m_val, s_val, metadata))
-                        # for x in range(0, vol.shape[2]):
-                        #     if x < A or x > B:
-                        #         images.append(vol[:, :, x])
-                        #         metadata2 = 'slice=' + str(x) + ",scan=" + str(scan.id) + ",annotations=None"
-                        #         annotations.append((0, 0, 0, 0, 0, 0, metadata2))
-                            #else:
-                            #    images.append(vol[:, :, x])
-                            #    annotations.append((y0, y1, x0, x1, m_val, s_val, metadata))
+                            annotations.append((y0, y1, x0, x1, m_val, s_val, x, centroid, x == centroid))
 
         self.images = images
         self.annotations = annotations
-        return True
+        return len(self.annotations) > 0
 
 
     # private methods
@@ -223,9 +175,6 @@ class CustomLidcDatasetReader(LidcDatasetReader):
         if len(self.images) == 0:
             error('Dataset has no images/data!')
             exit(-1)
-
-    def split(self, value):
-        pass
 
     def __load_ds(self, filename):
         with open(filename, 'rb') as filePointer:

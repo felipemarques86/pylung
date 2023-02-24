@@ -10,7 +10,6 @@ from main.models.resnet_model import ResNet50Model
 from main.models.vit_model import VitModel
 from main.utilities.utilities_lib import img_transformer, get_optimizer, LIDC_ANN_Y0, LIDC_ANN_Y1, LIDC_ANN_X0, \
     LIDC_ANN_X1
-from vit.vit_tensorflow.pit import PiT
 
 
 def get_ds(config, isolate_nodule_image, train_size, image_size, channels, data_transformer, ds):
@@ -119,7 +118,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         if weights_file is not None:
             model.load_weights(weights_file)
 
-        model.fit(
+        history = model.fit(
             x_train,
             y_train,
             validation_data=(x_valid, y_valid),
@@ -160,6 +159,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             'pooling': model_.pooling,
             'weights': model_.weights,
             'data_transformer_name': data_transformer_name,
+            'history': history.history,
             'learning_params': {
                 'learning_rate': learning_rate,
                 'drop_out': drop_out,
@@ -242,7 +242,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         if weights_file is not None:
             model.load_weights(weights_file)
 
-        model.fit(
+        history = model.fit(
             x_train,
             y_train,
             validation_data=(x_valid, y_valid),
@@ -281,6 +281,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             'image_channels': vit_model.image_channels,
             'version': vit_model.version,
             'data_transformer_name': data_transformer_name,
+            'history': history.history,
             'learning_params': {
                 'learning_rate': learning_rate,
                 'projection_dim': projection_dim,
@@ -345,7 +346,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         if weights_file is not None:
             model.load_weights(weights_file)
 
-        model.fit(
+        history = model.fit(
             x_train,
             y_train,
             validation_data=(x_valid, y_valid),
@@ -384,6 +385,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             'y_valid_size': len(y_valid),
             'image_channels': 3,
             'data_transformer_name': data_transformer_name,
+            'history': history.history,
             'learning_params': {
                 'learning_rate': learning_rate,
                 'activation': activation,

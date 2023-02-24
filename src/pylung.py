@@ -12,10 +12,12 @@ from colorama import init as colorama_init
 from optuna.samplers import TPESampler
 from prettytable import PrettyTable
 
+from main.dataset_utilities.dataset_reader_classes import DatasetTransformer
 from main.dataset_utilities.lidc_dataset_reader_classes import LidcDatasetReader, CustomLidcDatasetReader
+from main.dataset_utilities.pylung_ui import display_dataset_images
 from main.experiment.experiment_utilities import build_classification_objective, get_ds
 from main.utilities.utilities_lib import warning, error, info, get_data_transformer, display_original_image_bbox, \
-    get_experiment_codename, get_channels, img_transformer
+    get_experiment_codename, get_channels, img_transformer, LIDC_ANN_Y0, LIDC_ANN_Y1, LIDC_ANN_X0, LIDC_ANN_X1
 
 config = configparser.ConfigParser()
 app = typer.Typer()
@@ -33,6 +35,19 @@ def print_config(conf):
         for prop in conf[section]:
             table.add_row([section, prop, conf[section][prop]])
     print(table)
+
+@app.command("shuffle_database")
+def shuffle_database(name: str, _type: str, new_name: str):
+    ds_root_folder = config['DATASET'][f'processed_{_type}_location']
+    dataset_reader = CustomLidcDatasetReader(location=ds_root_folder + f'/{name}/')
+    dataset_reader.load_custom()
+    dataset_reader.shuffle_data()
+    dataset_reader.name = new_name
+    os.mkdir(ds_root_folder + f'/{new_name}/')
+    dataset_reader.location = ds_root_folder + f'/{new_name}/'
+    dataset_reader.part = 0
+    dataset_reader.part_size = 100000
+    dataset_reader.save()
 
 
 @app.command("create_dataset")
@@ -104,6 +119,69 @@ def datasets(_type: str):
         ds_config = configparser.ConfigParser()
         ds_config.read(directory + '/' + folder + '/config.ini')
         print_config(ds_config)
+
+
+@app.command("navigate_dataset")
+def navigate_dataset(dataset_name: str, _type: str, data_transformer_name=None, image_size: int = -1, isolate_nodule_image: bool = False, channels: int = -1):
+    directory = config['DATASET'][f'processed_{_type}_location']
+    dataset_reader = CustomLidcDatasetReader(location=directory + '/' + dataset_name + '/')
+    ds_config = configparser.ConfigParser()
+    ds_config.read(directory + '/' + dataset_name + '/config.ini')
+    info('Dataset config info')
+    print_config(ds_config)
+
+    if isolate_nodule_image is True:
+        info('Images will be nodule only')
+        dataset_reader.filter_out(lambda data: data[LIDC_ANN_Y0] == 0 and data[LIDC_ANN_Y1] == 0 and
+                                               data[LIDC_ANN_X0] == 0 and data[LIDC_ANN_X1] == 0)
+
+    if data_transformer_name is not None:
+        _, data_transformer, _, metrics = get_data_transformer(data_transformer_name)
+        info(f'Data transformer {data_transformer} will be applied')
+        dataset_reader.dataset_data_transformers.append(DatasetTransformer(function=data_transformer))
+
+    if image_size > 0 and channels > 0:
+        info(f'Images will be changed to size {image_size}x{image_size}x{channels} ')
+        dataset_reader.dataset_image_transformers.append(
+            DatasetTransformer(function=img_transformer(image_size, channels, isolate_nodule_image)))
+
+    dataset_reader.load_custom()
+    display_dataset_images(dataset_reader)
+
+
+@app.command("dataset_details")
+def dataset_details(dataset_name: str, _type: str, data_transformer_name=None, image_size: int = -1, isolate_nodule_image: bool = False, channels: int = -1, train_size: float = 0.8, dump_annotations_to_file: bool=False):
+    directory = config['DATASET'][f'processed_{_type}_location']
+    dataset_reader = CustomLidcDatasetReader(location=directory + '/' + dataset_name + '/')
+    ds_config = configparser.ConfigParser()
+    ds_config.read(directory + '/' + dataset_name + '/config.ini')
+    info('Dataset config info')
+    print_config(ds_config)
+
+    info(f'Loading the statistics (this might take several minutes)...')
+    info('Statistics before data and image transformation')
+    dataset_reader.load_custom()
+    dataset_reader.shuffle_data()
+    dataset_reader.statistics()
+
+    if isolate_nodule_image is True:
+        info('Images will be nodule only')
+        dataset_reader.filter_out(lambda data: data[LIDC_ANN_Y0] == 0 and data[LIDC_ANN_Y1] == 0 and
+                                               data[LIDC_ANN_X0] == 0 and data[LIDC_ANN_X1] == 0)
+
+    if data_transformer_name is not None:
+        _, data_transformer, _, metrics = get_data_transformer(data_transformer_name)
+        info(f'Data transformer {data_transformer} will be applied')
+        dataset_reader.dataset_data_transformers.append(DatasetTransformer(function=data_transformer))
+
+    if image_size > 0 and channels > 0:
+        info(f'Images will be changed to size {image_size}x{image_size}x{channels} ')
+        dataset_reader.dataset_image_transformers.append(
+            DatasetTransformer(function=img_transformer(image_size, channels, isolate_nodule_image)))
+
+    info('Statistics after data and image transformation')
+    dataset_reader.load_custom()
+    dataset_reader.statistics(first=train_size, dump_annotations_to_file=dump_annotations_to_file)
 
 @app.command("get_image")
 def get_image_data(dataset_name: str, _type: str, index: int = -1):
