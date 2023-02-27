@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 import numpy as np
 import optuna
+import tensorflow
 import typer
 from colorama import init as colorama_init
 from optuna.samplers import TPESampler
@@ -225,14 +226,15 @@ def predict(dataset_name: str, _type: str, weight_file_name, index: int = -1):
 
         model = model_(None)
         model.load_weights(weight_file_name + '.h5')
-        im = img_transformer(json_data['image_size'], json_data['image_channels'], True)(image, annotations)
+        im = img_transformer(json_data['image_size'], json_data['image_channels'], True)(image, annotations, None)
         print(im.shape)
         output = model.predict(np.expand_dims(im, axis=0))
 
         display_original_image_bbox(image, annotations,
                                     'Predicted Value = ' + str(output[0]) + ', '
-                                    'Actual Value = ' + str(data_transformer(annotations, None)))
-
+                                    'Actual Value = ' + str(data_transformer(annotations, None, None)))
+        del dataset_reader
+        tensorflow.keras.backend.clear_session()
 
 @app.command("drill_down")
 def drill_down(batch_size: int, epochs: int, study_file_path: str, train_size: float, data_set: str, load_weights: bool = False, isolate_nodule_image: bool = True):

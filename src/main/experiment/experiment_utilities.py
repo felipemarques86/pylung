@@ -105,7 +105,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
 
         model = model_.model
 
-        model.summary()
+        # model.summary()
         plot_model(model, to_file='resnet50.png', show_shapes=True, show_layer_names=True)
         # visualizer(model, filename='resnet50-2.png', format='png')
 
@@ -235,7 +235,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
 
         model: Model = vit_model.model
 
-        model.summary()
+        # model.summary()
         plot_model(model, to_file='vit.png', show_shapes=True, show_layer_names=True)
         # visualizer(model, filename='vit-2.png', format='png')
 
@@ -349,7 +349,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             metrics=metrics,
         )
 
-        model.summary()
+        # model.summary()
         plot_model(model, to_file='vgg16.png', show_shapes=True, show_layer_names=True)
         # visualizer(model, filename='vgg16-2.png', format='png')
 
