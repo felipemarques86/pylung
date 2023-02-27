@@ -158,7 +158,7 @@ class CustomLidcDatasetReader(LidcDatasetReader):
                 if self.filter is None or not self.filter(annotations[i]):
                     if len(self.dataset_data_transformers) > 0:
                         for j in range(0, len(self.dataset_data_transformers)):
-                                ann = self.dataset_data_transformers[j].execute(annotations[i], images[i])
+                                ann = self.dataset_data_transformers[j].execute(annotations[i], images[i], self.image_size)
                                 if ann is not None:
                                     self.annotations.append(ann)
                     else:

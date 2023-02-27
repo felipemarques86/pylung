@@ -328,7 +328,7 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
         config.write(configfile)
 
     code_name = str(get_experiment_codename(int(study_counter)+1))
-    optuna_study = optuna.create_study(storage=f'sqlite:///{db_name}.sqlite3', direction="maximize",
+    optuna_study = optuna.create_study(storage=f'sqlite:///{db_name}.sqlite3', directions=["maximize", "minimize", "maximize"],
                                        study_name=f'{code_name}',
                                        sampler=TPESampler())
 
@@ -383,5 +383,77 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
         print("    {}: {}".format(key, value))
 
 
+@app.command("detection_study")
+def detection_study(batch_size: int, epochs: int, train_size: float, image_size: int, model_type: str, n_trials: int,
+          data_transformer_name: str, data_set: str, db_name: str):
+
+    isolate_nodule_image = False
+    study_counter = config['STUDY']['study_counter']
+    config['STUDY']['study_counter'] = str(int(config['STUDY']['study_counter']) + 1)
+    with open('config.ini', 'w') as configfile:
+        config.write(configfile)
+
+    code_name = str(get_experiment_codename(int(study_counter)+1))
+    optuna_study = optuna.create_study(storage=f'sqlite:///{db_name}.sqlite3', direction="maximize",
+                                       study_name=f'{code_name}',
+                                       sampler=TPESampler())
+
+    optuna_study.set_user_attr('batch_size', batch_size)
+    optuna_study.set_user_attr('epochs', epochs)
+    optuna_study.set_user_attr('train_size', train_size)
+    optuna_study.set_user_attr('model_type', model_type)
+    optuna_study.set_user_attr('n_trials', n_trials)
+    optuna_study.set_user_attr('data_transformer_name', data_transformer_name)
+    optuna_study.set_user_attr('data_set', data_set)
+    optuna_study.set_user_attr('isolate_nodule_image', isolate_nodule_image)
+    optuna_study.set_user_attr('pylung_version', config['VERSION']['pylung_version'])
+
+    table = PrettyTable(['Parameter', 'Value'])
+
+    table.add_row(['Model Type', model_type])
+    table.add_row(['Batch Size', str(batch_size)])
+    table.add_row(['Epochs', str(epochs)])
+    table.add_row(['Train Size', str(train_size)])
+    table.add_row(['Image Size', str(image_size)])
+    table.add_row(['N Trials', str(n_trials)])
+    table.add_row(['Problem reduction function', data_transformer_name])
+    table.add_row(['Dataset Name', data_set])
+    table.add_row(['Isolate Nodule image', str(isolate_nodule_image)])
+
+    print(table)
+
+    num_classes, data_transformer, loss, metrics = get_data_transformer(data_transformer_name, True)
+
+    info(f'Loading dataset...')
+    data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size, ds=data_set, isolate_nodule_image=isolate_nodule_image, channels=get_channels(model_type))
+    info(f'Dataset loaded with {len(data[0])} images for training and {len(data[1])} images for validation.')
+
+
+
+    objective = build_classification_objective(model_type=model_type, image_size=image_size, batch_size=batch_size,
+                                               num_classes=num_classes, loss=loss, epochs=epochs, data=data,
+                                               metrics=metrics, save_weights=True, code_name=code_name,
+                                               data_transformer_name=data_transformer_name, detection=True)
+
+    optuna_study.optimize(objective, n_trials=n_trials) #, timeout=600)
+
+    print("Number of finished trials: {}".format(len(optuna_study.trials)))
+
+    print("Best trial:")
+    trial = optuna_study.best_trial
+
+    print("  Value: {}".format(trial.value))
+
+    print("  Params: ")
+    for key, value in trial.params.items():
+        print("    {}: {}".format(key, value))
+
+
 if __name__ == "__main__":
     app()
+
+
+if __name__ == "__main__":
+    app()
+
+

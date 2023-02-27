@@ -3,6 +3,7 @@ import json
 import numpy as np
 from keras import Model
 from keras.backend import clear_session
+from keras.utils.vis_utils import plot_model
 
 from main.dataset_utilities.dataset_reader_classes import DatasetTransformer
 from main.dataset_utilities.lidc_dataset_reader_classes import CustomLidcDatasetReader
@@ -68,7 +69,7 @@ def save_model(model_name, model, save_weights, code_name, acc, trial, params):
 
 def build_classification_objective(model_type, image_size, batch_size, epochs, num_classes, loss, data, metrics,
                                    code_name=None, save_weights=False, static_params=False, params=[], data_transformer_name=None,
-                                   return_model_only=False, weights_file=None):
+                                   return_model_only=False, weights_file=None, detection=False):
     def _resnet50_classify(trial):
         # Clear clutter from previous Keras session graphs.
         clear_session()
@@ -104,6 +105,10 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
 
         model = model_.model
 
+        model.summary()
+        plot_model(model, to_file='resnet50.png', show_shapes=True, show_layer_names=True)
+        # visualizer(model, filename='resnet50-2.png', format='png')
+
         model.compile(
             loss=loss,
             optimizer=get_optimizer(optimizer, learning_rate=learning_rate, weight_decay=weight, momentum=momentum),
@@ -125,7 +130,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             shuffle=True,
             batch_size=batch_size,
             epochs=epochs,
-            verbose=False
+            verbose=1
         )
 
 
@@ -172,7 +177,9 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
 
         save_model('resnet50', model, save_weights, code_name, str(score[1]), trial, train_params)
 
-        return score[1]
+        if detection:
+            return score[1]
+        return score[1], score[2], score[5]
 
 
 
@@ -188,7 +195,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             drop_out_2 = trial.suggest_float("Drop Out 2", 0.01, 0.3, log=True)
             drop_out_3 = trial.suggest_float("Drop Out 3", 0.01, 0.2, log=True)
             transformer_layers = trial.suggest_int("Num. Transformer layers", 2, 16, 2)
-            patch_size = trial.suggest_categorical("Patch Size", [4, 8, 16])
+            patch_size = trial.suggest_categorical("Patch Size", [16, 32, 64])
             activation = trial.suggest_categorical("Activation", ['softmax', 'sigmoid'])
             weight = trial.suggest_float("Weight", 1e-8, 1e-1, log=True)
             momentum = trial.suggest_float("Momentum", 1e-8, 1e-1, log=True)
@@ -228,6 +235,10 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
 
         model: Model = vit_model.model
 
+        model.summary()
+        plot_model(model, to_file='vit.png', show_shapes=True, show_layer_names=True)
+        # visualizer(model, filename='vit-2.png', format='png')
+
         model.compile(
             loss=loss,
             optimizer=get_optimizer(optimizer, learning_rate=learning_rate, weight_decay=weight, momentum=momentum),
@@ -249,7 +260,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             shuffle=True,
             batch_size=batch_size,
             epochs=epochs,
-            verbose=False
+            verbose=1
         )
 
         # Evaluate the model accuracy on the validation set.
@@ -299,7 +310,9 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         }
 
         save_model('vit', model, save_weights, code_name, str(score[1]), trial, train_params)
-        return score[1]
+        if detection:
+            return score[1]
+        return score[1], score[2], score[5]
 
     def vgg16(trial):
         from keras.applications.vgg16 import VGG16
@@ -330,13 +343,15 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         x = keras.layers.GlobalAveragePooling2D()(x)
         outputs = keras.layers.Dense(num_classes, activation=activation)(x)
         model = keras.Model(inputs, outputs)
-        model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
-
         model.compile(
             loss=loss,
             optimizer=get_optimizer(optimizer, learning_rate=learning_rate, weight_decay=weight, momentum=momentum),
             metrics=metrics,
         )
+
+        model.summary()
+        plot_model(model, to_file='vgg16.png', show_shapes=True, show_layer_names=True)
+        # visualizer(model, filename='vgg16-2.png', format='png')
 
         if return_model_only:
             return model
@@ -353,7 +368,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             shuffle=True,
             batch_size=batch_size,
             epochs=epochs,
-            verbose=False
+            verbose=1
         )
 
 
@@ -395,7 +410,9 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             }
         }
         save_model('vgg16', model, save_weights, code_name, str(score[1]), trial, train_params)
-        return score[1]
+        if detection:
+            return score[1]
+        return score[1], score[2], score[5]
 
     if model_type == 'vit':
         return _vit_classify_objective

@@ -33,7 +33,7 @@ def info(message: str):
 
 
 
-def get_data_transformer(data_transformer_name):
+def get_data_transformer(data_transformer_name, detection=False):
     metrics = []
     data_transformer = globals()[data_transformer_name]
     loss = 'categorical_crossentropy'
@@ -56,17 +56,17 @@ def get_data_transformer(data_transformer_name):
     elif data_transformer_name.startswith('one_hot_six'):
         num_classes = 6
         metrics.append("accuracy")
+    elif data_transformer_name.startswith('bbox'):
+        num_classes = 4
+        metrics.append("accuracy")
     else:
         raise Exception(f'{data_transformer_name} not found!')
 
-    metrics.append(tf.keras.metrics.FalsePositives())
-    metrics.append(tf.keras.metrics.FalseNegatives())
-    metrics.append(tf.keras.metrics.TrueNegatives())
-    metrics.append(tf.keras.metrics.TruePositives())
-
-    #metrics.append(tf.keras.metrics.Precision())
-    #metrics.append(tf.keras.metrics.AUC())
-    #metrics.append("loss")
+    if not detection:
+        metrics.append(tf.keras.metrics.FalsePositives())
+        metrics.append(tf.keras.metrics.FalseNegatives())
+        metrics.append(tf.keras.metrics.TrueNegatives())
+        metrics.append(tf.keras.metrics.TruePositives())
 
 
     return num_classes, data_transformer, loss, metrics
@@ -82,30 +82,30 @@ def filter_out_class0_malignancy(data):
 # Problem reduction functions - these functions determine which classes are going to be used and how they are grouped
 
 # Any image with ML != 0 is considered an image with nodule
-def binary_non_module(data, _):
+def binary_non_module(data, _1, _2):
     if data[LIDC_ANN_ML] == 0:
         return [0]
     return [1]
 
 # Images with ML = [0,1,2] are BENIGN=[1, 0] and [3,4,5] are MALIGNANT=[0, 1]
-def one_hot_two_non_module(data, _):
+def one_hot_two_non_nodule(data, _1, _2):
     if data[LIDC_ANN_ML] > 0:
         return [0, 1]  # malignant
     return [1, 0]
 
 # Images with ML = [0,1,2] are BENIGN=[0] and [3,4,5] are MALIGNANT=[1]
-def binary_malignancy_3benign(data, _):
+def binary_malignancy_3benign(data, _1, _2):
     clazz = 0
     if data[LIDC_ANN_ML] > 3:
         clazz = 1
     return [clazz]
 
-def one_hot_two_malignancy_3benign(data, _):
+def one_hot_two_malignancy_3benign(data, _1, _2):
     if data[LIDC_ANN_ML] > 3:
         return [0, 1]  # malignant
     return [1, 0]
 
-def binary_malignancy_cut0_3benign(data, _):
+def binary_malignancy_cut0_3benign(data, _1, _2):
     if data[LIDC_ANN_ML] == 0:
         return None
     clazz = 0
@@ -113,39 +113,39 @@ def binary_malignancy_cut0_3benign(data, _):
         clazz = 1
     return [clazz]
 
-def binary_malignancy_3malignant(data, _):
+def binary_malignancy_3malignant(data, _1, _2):
     if data[LIDC_ANN_ML] > 2:
         return [1]  # malignant
     return [0]
 
 
-def one_hot_two_malignancy_3malignant(data, _):
+def one_hot_two_malignancy_3malignant(data, _1, _2):
     if data[LIDC_ANN_ML] > 2:
         return [0, 1]  # malignant
     return [1, 0]
 
-def binary_malignancy_cut3(data, _):
+def binary_malignancy_cut3(data, _1, _2):
     if data[LIDC_ANN_ML] == 3:
         return None
     if data[LIDC_ANN_ML] > 2:
         return [1]
     return [0]
 
-def one_hot_two_malignancy_cut3(data, _):
+def one_hot_two_malignancy_cut3(data, _1, _2):
     if data[LIDC_ANN_ML] == 3:
         return None
     if data[LIDC_ANN_ML] > 2:
         return [0, 1]
     return [1, 0]
 
-def binary_malignancy_cut0and3(data, _):
+def binary_malignancy_cut0and3(data, _1, _2):
     if data[LIDC_ANN_ML] == 3 or data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 2:
         return [1]  # malignant
     return [0]
 
-def one_hot_two_malignancy_cut0and3(data, _):
+def one_hot_two_malignancy_cut0and3(data, _1, _2):
     if data[LIDC_ANN_ML] == 3 or data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 2:
@@ -153,7 +153,7 @@ def one_hot_two_malignancy_cut0and3(data, _):
     return [1, 0]
 
 
-def binary_malignancy_cut0_3benign(data, _):
+def binary_malignancy_cut0_3benign(data, _1, _2):
     if data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 3:
@@ -161,7 +161,7 @@ def binary_malignancy_cut0_3benign(data, _):
     return [0]
 
 
-def one_hot_two_malignancy_cut0_3benign(data, _):
+def one_hot_two_malignancy_cut0_3benign(data, _1, _2):
     if data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 3:
@@ -169,26 +169,26 @@ def one_hot_two_malignancy_cut0_3benign(data, _):
     return [1, 0]
 
 
-def binary_malignancy_cut0_3malignant(data, _):
+def binary_malignancy_cut0_3malignant(data, _1, _2):
     if data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 2:
         return [1]  # malignant
     return [0]
 
-def one_hot_two_malignancy_cut0_3malignant(data, _):
+def one_hot_two_malignancy_cut0_3malignant(data, _1, _2):
     if data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 2:
         return [0, 1]  # malignant
     return [1, 0]
 
-def one_hot_six(data, _):
+def one_hot_six(data, _1, _2):
     ret = [0, 0, 0, 0, 0, 0]
     ret[int(data[LIDC_ANN_ML]-1)] = 1
     return ret
 
-def one_hot_five(data, _):
+def one_hot_five(data, _1, _2):
     ret = [0, 0, 0, 0, 0]
     if data[LIDC_ANN_ML] == 0:
         return ret
@@ -197,14 +197,14 @@ def one_hot_five(data, _):
     ret[int(data[LIDC_ANN_ML]-1)] = 1
     return ret
 
-def one_hot_five_cut0(data, _):
+def one_hot_five_cut0(data, _1, _2):
     if data[LIDC_ANN_ML] == 0:
         return None
     ret = [0, 0, 0, 0, 0]
     ret[int(data[LIDC_ANN_ML]-1)] = 1
     return ret
 
-def one_hot_five_cut3(data, _):
+def one_hot_five_cut3(data, _1, _2):
     if data[LIDC_ANN_ML] == 3:
         return None
     if data[LIDC_ANN_ML] == 0:
@@ -218,7 +218,7 @@ def one_hot_five_cut3(data, _):
     else:
         return [0, 0, 0, 0, 1]
 
-def one_hot_four(data, _):
+def one_hot_four(data, _1, _2):
     ret = [0, 0, 0, 0]
     if data[LIDC_ANN_ML] == 0:
         return ret
@@ -229,7 +229,7 @@ def one_hot_four(data, _):
     else:
         return [0, 0, 0, 1]
 
-def one_hot_four_cut0and3(data, _):
+def one_hot_four_cut0and3(data, _1, _2):
     if data[LIDC_ANN_ML] == 3 or data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] == 1:
@@ -241,8 +241,11 @@ def one_hot_four_cut0and3(data, _):
     else:
         return [0, 0, 0, 1]
 
-def bbox(data, _):
-    return data[LIDC_ANN_Y0], data[LIDC_ANN_Y1], data[LIDC_ANN_X0], data[LIDC_ANN_X1],
+def bbox(data, _, image_size):
+    if data[LIDC_ANN_ML] == 0:
+        return None
+    return (data[LIDC_ANN_Y0] / 512) * image_size, (data[LIDC_ANN_Y1] / 512) * image_size, \
+        (data[LIDC_ANN_X0] / 512) * image_size, (data[LIDC_ANN_X1] / 512) * image_size
 
 
 def get_optimizer(name, learning_rate, weight_decay, momentum):
@@ -256,7 +259,7 @@ def get_optimizer(name, learning_rate, weight_decay, momentum):
 
 
 def img_transformer(image_size, channels, isolate_nodule_image):
-    def resize(image, annotation):
+    def resize(image, annotation, _):
         image = np.float32(image)
         if NORMALIZE:
             image[image < -1000] = -1000
@@ -332,17 +335,7 @@ def display_original_image_bbox(image, annotations, extra_text=''):
         ax1.add_patch(rect)
         ax1.set_xlabel(
             "Original Data: "
-            + str(int(annotations[2]))
-            + ", "
-            + str(int(annotations[0]))
-            + ", "
-            + str(int(annotations[3]))
-            + ", "
-            + str(int(annotations[1]))
-            + "\n"
-            + str(annotations[4])
-            + ", "
-            + str(annotations[5])
+            + str(annotations)
             + "\n"
             + extra_text
         )
