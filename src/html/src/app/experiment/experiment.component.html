@@ -1,0 +1,161 @@
+<div class="loader" *ngIf="showLoader"><img src="assets/img/loader-preview.svg" alt="loading"></div>
+<div class="main-content">
+    <div class="container-fluid">
+        <div class="row" *ngIf="!!datasetList">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="header">
+                        <h4 class="title">Dataset List</h4>
+                        <p class="category">This is the list of registered datasets</p>
+                    </div>
+                    <div class="content table-responsive table-full-width">
+                        <table class="table table-hover table-striped">
+                            <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>Image Size</th>
+                                <th>Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr *ngFor="let row of datasetList.datasets">
+                                <td>{{row.name}}</td>
+                                <td>{{row.type}}</td>
+                                <td>{{row.description}}</td>
+                                <td>{{row.image_size}}x{{row.image_size}}</td>
+                                <td>
+                                    <button (click)="open(row)" *ngIf="row.deflated == 'True'">Open Dataset</button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row" *ngIf="!!trialList">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="header">
+                        <h4 class="title">Trial list</h4>
+                        <p class="category">This is the list of trials</p>
+                    </div>
+                    <div class="content">
+                        <div class="row">
+                            <div class="col-md-12">
+                                Trial/Model:
+                                <select class="form-control" [(ngModel)]="trial" (change)="loadTrial(trial)">
+                                    <option *ngFor="let t of trialList" [value]="t">
+                                        {{t.replace('$', '-')}}
+                                    </option>
+                                </select>
+
+
+                            </div>
+                        </div>
+                         <div class="row" *ngIf="!!selected_trial">
+                            <div class="col-md-12">
+
+                                    Name: {{selected_trial.code_name}}<br />
+                                    Model Type: {{selected_trial.model_type}}<br />
+                                    Classes: {{selected_trial.num_classes}}<br />
+                                    Image size: {{selected_trial.image_size}}x{{selected_trial.image_size}}<br />
+                                    <span *ngFor="let score in selected_trial.score; let i = index">
+                                        {{selected_trial.score_names[i]}}: {{score}}<br />
+                                    </span><br />
+                            </div>
+                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row"  *ngIf="!!dataset">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="header">
+                        <h4 class="title">Image List</h4>
+                        <p class="category">This is the list of images for the selected dataset</p>
+                    </div>
+                    <div class="content">
+                        <div class="row">
+                            <div class="col-md-12 image-container">
+                                 <div *ngFor="let i of getDisplayedItems()">
+                                    <img [src]="pylungService.getImageUrl(dataset, i)">
+                                     <br/>
+                                     <button (click)="predict(i)">Predict - Image {{i}}</button>
+
+                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                Page:
+                                <select class="form-control" [(ngModel)]="currentPage">
+                                    <option *ngFor="let pageNumber of totalPages" [value]="pageNumber">
+                                        {{pageNumber}}
+                                    </option>
+                                </select>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" *ngIf="!!prediction">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="header">
+                            <h4 class="title">Result of Image {{selected}}</h4>
+                            <p class="category">Result applying the selected model prediction</p>
+                    </div>
+                    <div class="content">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <ul>
+                                    <li *ngIf="selected_trial.num_classes == 1 || selected_trial.num_classes == 2">Binary Result: {{prediction.binary}}</li>
+                                    <li>Real Result: {{prediction.predicted}}</li>
+                                    <li>Integer Result: {{prediction.predicted_int}}</li>
+                                    <li>Annotation: {{prediction.annotation}}</li>
+                                    <li>Timespent (s): {{prediction.timespent}}</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="category">Image with a bounding box</h5>
+                                <img [src]="pylungService.getImageUrl(dataset, selected, '', true)"
+                                     style="width: 100%; height: auto;">
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="category">Cropped image</h5>
+                                <img [src]="pylungService.getImageUrl(dataset, selected, '', false, true)"
+                                     style="width: 100%; height: auto;">
+                            </div>
+                        </div>
+
+                        <div class="row" *ngIf="selected_trial.num_classes == 4">
+                            <div class="col-md-6">
+                                <h5 class="category">Image with a bounding box (Predicted)</h5>
+                                <img [src]="pylungService.getImageUrl(dataset, selected, prediction.predicted.join(','), true)"
+                                     style="width: 100%; height: auto;">
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="category">Cropped image (Predicted)</h5>
+                                <img [src]="pylungService.getImageUrl(dataset, selected, prediction.predicted.join(','), false, true)"
+                                     style="width: 100%; height: auto;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
