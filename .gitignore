@@ -9,6 +9,8 @@
 *.h5
 /data/
 /weights/
+/weights/detection/
+/weights/detection/*.json
 /weights/*.*
 /test/weights/
 /test/models/
