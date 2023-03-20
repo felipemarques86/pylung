@@ -27,8 +27,8 @@ class DatasetTransformer:
         super().__init__()
         self.function = function
 
-    def execute(self, param1, param2=None, param3=None):
-        return self.function(param1, param2, param3)
+    def execute(self, param1, param2=None, param3=None, param4=None):
+        return self.function(param1, param2, param3, param4)
 
     def walk(self, param):
         self.function(param)

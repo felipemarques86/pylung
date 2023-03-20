@@ -9,6 +9,7 @@
 *.h5
 /data/
 /weights/
+/weights/*.*
 /test/weights/
 /test/models/
 /logs/

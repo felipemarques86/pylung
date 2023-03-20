@@ -1,9 +1,9 @@
+import pickle
 import configparser
 
 import cv2
 import numpy as np
 import pylidc as pl
-from matplotlib import pyplot as plt, patches
 from prettytable import PrettyTable
 from pylidc.utils import consensus
 
@@ -12,7 +12,7 @@ from main.utilities.utilities_lib import error
 
 
 class LidcDatasetReader(DatasetReader):
-    def __init__(self, location: str, image_size: int, consensus_level: float, pad: int, part: int = 0, part_size: int = 1, num_parts: int = 0) -> None:
+    def __init__(self, location: str, image_size: int, consensus_level: float, pad: int, part: int = 0, part_size: int = 1, num_parts: int = 0, zip = True) -> None:
         """
 
         :param location: 
@@ -28,6 +28,7 @@ class LidcDatasetReader(DatasetReader):
         self.consensus_level = consensus_level
         self.pad = pad
         self.total_scan = 0
+        self.zip = zip
 
         super().__init__(dataset, location, part, part_size, num_parts)
 
@@ -43,15 +44,21 @@ class LidcDatasetReader(DatasetReader):
         self.images = []
         self.annotations = []
 
-    def save(self):
-        file_name_annotations = self.get_ds_single_file_name('annotations-pt-' + str(self.part))
-        file_name_images = self.get_ds_single_file_name('images-pt-' + str(self.part))
-        self.save_ds_single_file(file_name_annotations, self.annotations)
-        self.save_ds_single_file(file_name_images, self.images)
+    def save(self, start = 0, other_location = None):
+        if self.zip:
+            file_name_annotations = self.get_ds_single_file_name('annotations-pt-' + str(self.part), other_location)
+            file_name_images = self.get_ds_single_file_name('images-pt-' + str(self.part), other_location)
+            self.save_ds_single_file(file_name_annotations, self.annotations)
+            self.save_ds_single_file(file_name_images, self.images)
+        else:
+            self.save_separated_files('image-', self.images, '.raw', start, other_location)
+            self.save_separated_files('annotation-', self.annotations, '.txt', start, other_location)
+
+        return len(self.images)
 
     def next(self):
         return LidcDatasetReader(self.location, self.image_size, self.consensus_level, self.pad, self.part + 1,
-                                 self.part_size)
+                                 self.part_size, zip=self.zip)
 
     def load(self, iterative=False, walk=False):
         scan_list = pl.query(pl.Scan)
@@ -94,15 +101,31 @@ class LidcDatasetReader(DatasetReader):
 
 
     # private methods
-    def get_ds_single_file_name(self, type):
+    def get_ds_single_file_name(self, type, other_location=None):
+        location = self.location
+        if other_location is not None:
+            location = other_location
         if self.image_size == -1:
-            return self.location + 'LIDC-RAW-' + str(self.pad) + '-' + type + '.pkl'
-        return self.location + 'LIDC-' + str(self.image_size) + '-' + str(self.pad) + '-' + type + '.pkl'
+            return location + 'LIDC-RAW-' + str(self.pad) + '-' + type + '.pkl'
+        return location + 'LIDC-' + str(self.image_size) + '-' + str(self.pad) + '-' + type + '.pkl'
 
     def save_ds_single_file(self, filename, obj):
         with open(filename, 'wb') as outp:
-            import pickle
             pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
+
+    def save_separated_files(self, prefix, obj, ext, start, other_location):
+        mode = 'wb'
+        if ext == 'txt' or ext == 'csv':
+            mode = 'w'
+
+        location = self.location
+        if other_location is not None:
+            location = other_location
+
+        for i in range(0, len(obj)):
+            with open(location + f'{prefix}{str(i+start)}{ext}', mode) as file:
+                pickle.dump(obj[i], file, pickle.HIGHEST_PROTOCOL)
+        file.close()
 
     def resize(self, image):
         im = np.float32(image)
@@ -144,8 +167,11 @@ class CustomLidcDatasetReader(LidcDatasetReader):
         table.add_row(['Num parts', self.num_parts])
         return table
 
-    def load_custom(self, dry_run=False, walk=False):
+    def load_custom(self, image_size =-1, dry_run=False, walk=False):
         self.clear()
+        img_size = self.image_size
+        if image_size > 0:
+            img_size = image_size
         for part in range(self.part, self.num_parts):
             file_name_annotations = self.get_ds_single_file_name('annotations-pt-' + str(part))
             file_name_images = self.get_ds_single_file_name('images-pt-' + str(part))
@@ -158,7 +184,7 @@ class CustomLidcDatasetReader(LidcDatasetReader):
                 if self.filter is None or not self.filter(annotations[i]):
                     if len(self.dataset_data_transformers) > 0:
                         for j in range(0, len(self.dataset_data_transformers)):
-                                ann = self.dataset_data_transformers[j].execute(annotations[i], images[i], self.image_size)
+                                ann = self.dataset_data_transformers[j].execute(annotations[i], images[i], self.image_size, img_size)
                                 if ann is not None:
                                     self.annotations.append(ann)
                     else:
@@ -181,3 +207,4 @@ class CustomLidcDatasetReader(LidcDatasetReader):
             import pickle
             data = pickle.load(filePointer)
         return data
+

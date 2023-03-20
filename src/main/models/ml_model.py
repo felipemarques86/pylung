@@ -1,10 +1,70 @@
+import json
 import pickle
 
+from keras import Model
+from keras.backend import clear_session
+from keras.utils.vis_utils import plot_model
 from prettytable import PrettyTable
 from tensorflow import keras
 
 from main.common.config_classes import ConfigurableObject
-from main.utilities.utilities_lib import info
+from main.utilities.utilities_lib import info, get_optimizer
+
+
+class CustomModelDefinition(ConfigurableObject):
+    def __init__(self):
+        super().__init__()
+
+    def clear_session(self):
+        clear_session()
+
+    def _details(self):
+        raise Exception('Implement the method details')
+
+    def details(self):
+        stringlist =[]
+        details = self._details()
+        model: Model = self.default_build()
+        model.summary(print_fn=lambda x: stringlist.append(x))
+        details['build'] = '\n'.join(stringlist)
+
+        table = PrettyTable(['Property', 'Value'])
+        table.add_row(['Model Name', details['model_name']])
+        table.add_row(['Parameters', details['parameters']])
+        table.add_row(['Description', details['description']])
+        table.add_row(['Extra Information', details['extra_information']])
+        return details, table
+
+    def build(self, image_size, batch_size, epochs, num_classes, loss, data, metrics,
+                   code_name=None, save_weights=False, static_params=False, params=[],
+                   data_transformer_name=None,
+                   return_model_only=False, weights_file=None, detection=False):
+        raise Exception('Implement the method build')
+
+    def save_model(self, model_name, model, save_weights, code_name, acc, trial, params):
+        if save_weights:
+            import time
+            if trial is not None:
+                name = 'trial_' + str(trial.number) + '-' + code_name + '_a' + acc
+            else:
+                name = model_name + '_' + str(time.time_ns()) + '_a' + acc
+                if code_name is None:
+                    name = model_name + '_' + code_name + '_a' + acc
+            model.save_weights('weights/' + name + '.h5')
+            json_obj = json.dumps(params, indent=4)
+            with open('weights/' + name + '.json', "w") as outfile:
+                outfile.write(json_obj)
+
+    def get_optimizer(self, optimizer, learning_rate, weight_decay, momentum):
+        return get_optimizer(optimizer, learning_rate=learning_rate, weight_decay=weight_decay, momentum=momentum)
+
+    def save_model_as_image(self, model, model_type):
+        import os
+        return plot_model(model, to_file=os.getcwd() + '\\static\\'+model_type + '.png', show_shapes=True, show_layer_names=True)
+
+    def default_build(self):
+        raise Exception('Implement the method default_build')
+
 
 class MlModel(ConfigurableObject):
     def __init__(self, name, version, num_classes=0, image_size=0, image_channels=0):

@@ -1,3 +1,4 @@
+import importlib
 import json
 
 import numpy as np
@@ -7,26 +8,27 @@ from keras.utils.vis_utils import plot_model
 
 from main.dataset_utilities.dataset_reader_classes import DatasetTransformer
 from main.dataset_utilities.lidc_dataset_reader_classes import CustomLidcDatasetReader
+from main.models.ml_model import CustomModelDefinition
 from main.models.resnet_model import ResNet50Model
 from main.models.vit_model import VitModel
 from main.utilities.utilities_lib import img_transformer, get_optimizer, LIDC_ANN_Y0, LIDC_ANN_Y1, LIDC_ANN_X0, \
-    LIDC_ANN_X1
+    LIDC_ANN_X1, LIDC_CENTROID_FLAG
 
 
-def get_ds(config, isolate_nodule_image, train_size, image_size, channels, data_transformer, ds):
+def get_ds(config, isolate_nodule_image, train_size, image_size, channels, centroid_only, data_transformer, ds):
     ds_root_folder = config['DATASET'][f'processed_lidc_idri_location']
     dataset_reader = CustomLidcDatasetReader(location=ds_root_folder + f'/{ds}/')
-    if isolate_nodule_image:
-        dataset_reader.filter_out(lambda data: data[LIDC_ANN_Y0] == 0 and data[LIDC_ANN_Y1] == 0 and
-                                               data[LIDC_ANN_X0] == 0 and data[LIDC_ANN_X1] == 0)
+    #if isolate_nodule_image:
+    #    dataset_reader.filter_out(lambda data: data[LIDC_ANN_Y0] == 0 and data[LIDC_ANN_Y1] == 0 and
+    #                                           data[LIDC_ANN_X0] == 0 and data[LIDC_ANN_X1] == 0)
+
+    if centroid_only:
+        dataset_reader.filter_out(lambda data: not data[LIDC_CENTROID_FLAG])
 
     dataset_reader.dataset_data_transformers.append(DatasetTransformer(function=data_transformer))
     dataset_reader.dataset_image_transformers.append(
         DatasetTransformer(function=img_transformer(image_size, channels, isolate_nodule_image)))
-    dataset_reader.load_custom()
-
-    #dataset_reader.shuffle_data()
-
+    dataset_reader.load_custom(image_size=image_size)
 
     x = dataset_reader.images
     y = dataset_reader.annotations
@@ -67,8 +69,35 @@ def save_model(model_name, model, save_weights, code_name, acc, trial, params):
         with open('weights/' + name + '.json', "w") as outfile:
             outfile.write(json_obj)
 
+
+def load_module(module):
+    import sys
+
+    module_path = "main.model_registry.classification.%s" % module
+    # module_path = module
+
+    # if module_path in sys.modules:
+    #    return sys.modules[module_path]
+
+    return importlib.import_module(module_path)
+
+
+def get_model(model_type, image_size, batch_size, epochs, num_classes, loss, data, metrics,
+              code_name=None, save_weights=False, static_params=False, params=[], data_transformer_name=None,
+              return_model_only=False, weights_file=None, detection=False):
+    m = load_module(model_type)
+    modelDef: CustomModelDefinition = m.ModelDefinition()
+    return modelDef.build(image_size=image_size, batch_size=batch_size, epochs=epochs,
+                          num_classes=num_classes, loss=loss, data=data, metrics=metrics,
+                          code_name=code_name, save_weights=save_weights, static_params=static_params, params=params,
+                          data_transformer_name=data_transformer_name, return_model_only=return_model_only,
+                          weights_file=weights_file, detection=detection)
+
+
+# deprecated
 def build_classification_objective(model_type, image_size, batch_size, epochs, num_classes, loss, data, metrics,
-                                   code_name=None, save_weights=False, static_params=False, params=[], data_transformer_name=None,
+                                   code_name=None, save_weights=False, static_params=False, params=[],
+                                   data_transformer_name=None,
                                    return_model_only=False, weights_file=None, detection=False):
     def _resnet50_classify(trial):
         # Clear clutter from previous Keras session graphs.
@@ -133,7 +162,6 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             verbose=1
         )
 
-
         score = model.evaluate(x_valid, y_valid, verbose=0)
         print(score)
         print(model.metrics_names)
@@ -180,8 +208,6 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         if detection:
             return score[1]
         return score[1], score[2], score[5]
-
-
 
     def _vit_classify_objective(trial):
         # Clear clutter from previous Keras session graphs.
@@ -333,7 +359,6 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             momentum = params['momentum']
             optimizer = params['optimizer']
 
-
         shape = (image_size, image_size, 3)
 
         base_model = VGG16(weights='imagenet', input_shape=shape, include_top=False)
@@ -350,7 +375,7 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
         )
 
         # model.summary()
-        plot_model(model, to_file='vgg16.png', show_shapes=True, show_layer_names=True)
+        # plot_model(model, to_file='vgg16.png', show_shapes=True, show_layer_names=True)
         # visualizer(model, filename='vgg16-2.png', format='png')
 
         if return_model_only:
@@ -370,7 +395,6 @@ def build_classification_objective(model_type, image_size, batch_size, epochs, n
             epochs=epochs,
             verbose=1
         )
-
 
         # Evaluate the model accuracy on the validation set.
         score = model.evaluate(x_valid, y_valid, verbose=0)
