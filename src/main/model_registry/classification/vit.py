@@ -31,7 +31,7 @@ class ModelDefinition(CustomModelDefinition):
     def build(self, image_size, batch_size, epochs, num_classes, loss, data, metrics,
                        code_name=None, save_weights=False, static_params=False, params=[],
                        data_transformer_name=None,
-                       return_model_only=False, weights_file=None, detection=False):
+                       return_model_only=False, weights_file=None, detection=False, isolate_nodule_image=False):
 
         model_type = 'vit'
         def objective(trial):
@@ -152,6 +152,8 @@ class ModelDefinition(CustomModelDefinition):
                 'version': vit_model.version,
                 'data_transformer_name': data_transformer_name,
                 'history': history.history,
+                'isolate_nodule_image': isolate_nodule_image,
+                'detection': detection,
                 'learning_params': {
                     'learning_rate': learning_rate,
                     'projection_dim': projection_dim,
@@ -168,7 +170,7 @@ class ModelDefinition(CustomModelDefinition):
                 }
             }
 
-            self.save_model('vit', model, save_weights, code_name, str(score[1]), trial, train_params)
+            self.save_model('vit', model, save_weights, code_name, str(score[1]), trial, train_params, isolate_nodule_image, detection, data_transformer_name)
 
             if detection:
                 return score[0], score[1]

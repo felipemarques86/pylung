@@ -1,0 +1,72 @@
+{
+    "trial_id": "0",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 200,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Charlie Zebra",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.10917655378580093,
+        1.0
+    ],
+    "score_names": [
+        "loss",
+        "mean_io_u"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.12213806807994843,
+            0.11043359339237213,
+            0.11043202131986618,
+            0.1103767678141594,
+            0.11034702509641647
+        ],
+        "mean_io_u": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "val_loss": [
+            0.10896509885787964,
+            0.10906841605901718,
+            0.10906686633825302,
+            0.10897907614707947,
+            0.10917654633522034
+        ],
+        "val_mean_io_u": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 0.0001503252740475484,
+        "projection_dim": 126,
+        "num_heads": 6,
+        "drop_out_1": 0.310141522354281,
+        "drop_out_2": 0.028862384535108112,
+        "drop_out_3": 0.02997329800660096,
+        "transformer_layers": 2,
+        "patch_size": 16,
+        "activation": "softmax",
+        "weight": 0.009689372456442021,
+        "momentum": 1.7957887726284793e-07,
+        "optimizer": "AdamW"
+    }
+}

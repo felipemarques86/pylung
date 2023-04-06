@@ -1,0 +1,72 @@
+{
+    "trial_id": "0",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 200,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Uniform Giraffe",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.28943246603012085,
+        0.2894248068332672
+    ],
+    "score_names": [
+        "loss",
+        "mean_squared_error"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.28993138670921326,
+            0.2983870506286621,
+            0.2922976016998291,
+            0.29230600595474243,
+            0.29233989119529724
+        ],
+        "mean_squared_error": [
+            0.2900940179824829,
+            0.2982913553714752,
+            0.2921479642391205,
+            0.2921639382839203,
+            0.2920927107334137
+        ],
+        "val_loss": [
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324
+        ],
+        "val_mean_squared_error": [
+            0.289194256067276,
+            0.289194256067276,
+            0.289194256067276,
+            0.289194256067276,
+            0.289194256067276
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 0.005300785450972313,
+        "projection_dim": 120,
+        "num_heads": 2,
+        "drop_out_1": 0.12439740014094593,
+        "drop_out_2": 0.023059131520261598,
+        "drop_out_3": 0.17598396923760803,
+        "transformer_layers": 3,
+        "patch_size": 32,
+        "activation": "softmax",
+        "weight": 3.736848271624693e-06,
+        "momentum": 1.099475128332964e-08,
+        "optimizer": "AdamW"
+    }
+}

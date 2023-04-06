@@ -1,4 +1,5 @@
 import json
+import os
 import pickle
 
 from keras import Model
@@ -38,10 +39,20 @@ class CustomModelDefinition(ConfigurableObject):
     def build(self, image_size, batch_size, epochs, num_classes, loss, data, metrics,
                    code_name=None, save_weights=False, static_params=False, params=[],
                    data_transformer_name=None,
-                   return_model_only=False, weights_file=None, detection=False):
+                   return_model_only=False, weights_file=None, detection=False, isolate_nodule_image=False):
         raise Exception('Implement the method build')
 
-    def save_model(self, model_name, model, save_weights, code_name, acc, trial, params):
+    def save_model(self, model_name, model, save_weights, code_name, acc, trial, params, isolate_nodule_image, detection, data_transformer_name):
+        path = 'classification'
+        if detection:
+            path = 'detection'
+
+        if isolate_nodule_image:
+            path = f'{path}_{data_transformer_name}_crop_nodule'
+        else:
+            path = f'{path}_{data_transformer_name}_full_image'
+
+
         if save_weights:
             import time
             if trial is not None:
@@ -50,9 +61,12 @@ class CustomModelDefinition(ConfigurableObject):
                 name = model_name + '_' + str(time.time_ns()) + '_a' + acc
                 if code_name is None:
                     name = model_name + '_' + code_name + '_a' + acc
-            model.save_weights('weights/' + name + '.h5')
+
+            os.makedirs('weights/' + path, exist_ok=True)
+
+            model.save_weights('weights/' + path + '/' + name + '.h5')
             json_obj = json.dumps(params, indent=4)
-            with open('weights/' + name + '.json', "w") as outfile:
+            with open('weights/'  + path + '/' + name + '.json', "w") as outfile:
                 outfile.write(json_obj)
 
     def get_optimizer(self, optimizer, learning_rate, weight_decay, momentum):

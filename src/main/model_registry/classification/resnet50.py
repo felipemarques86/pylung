@@ -27,7 +27,7 @@ class ModelDefinition(CustomModelDefinition):
 
     def build(self, image_size, batch_size, epochs, num_classes, loss, data, metrics, code_name=None,
               save_weights=False, static_params=False, params=[], data_transformer_name=None, return_model_only=False,
-              weights_file=None, detection=False):
+              weights_file=None, detection=False, isolate_nodule_image=False):
 
         model_type = 'resnet50'
         def objective(trial):
@@ -140,6 +140,8 @@ class ModelDefinition(CustomModelDefinition):
             'weights': model_.weights,
             'data_transformer_name': data_transformer_name,
             'history': history.history,
+            'isolate_nodule_image': isolate_nodule_image,
+            'detection': detection,
             'learning_params': {
                 'learning_rate': learning_rate,
                 'drop_out': drop_out,

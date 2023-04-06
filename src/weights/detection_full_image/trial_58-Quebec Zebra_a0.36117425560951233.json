@@ -1,0 +1,72 @@
+{
+    "trial_id": "58",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 200,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Quebec Zebra",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.11362955719232559,
+        0.36117425560951233
+    ],
+    "score_names": [
+        "loss",
+        "bounding_box_intersection_over_union_tf"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.11970873177051544,
+            0.11849037557840347,
+            0.11755330860614777,
+            0.11674002557992935,
+            0.11608560383319855
+        ],
+        "bounding_box_intersection_over_union_tf": [
+            0.34085845947265625,
+            0.34564855694770813,
+            0.3494323492050171,
+            0.35283130407333374,
+            0.3557248115539551
+        ],
+        "val_loss": [
+            0.11632034927606583,
+            0.11542154848575592,
+            0.11469326168298721,
+            0.11410840600728989,
+            0.11362951993942261
+        ],
+        "val_bounding_box_intersection_over_union_tf": [
+            0.34910187125205994,
+            0.35295289754867554,
+            0.3561939001083374,
+            0.35889673233032227,
+            0.36117467284202576
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 1.7961466977906976e-09,
+        "projection_dim": 122,
+        "num_heads": 6,
+        "drop_out_1": 0.06496121924872873,
+        "drop_out_2": 0.08956795346679285,
+        "drop_out_3": 0.019554243450887687,
+        "transformer_layers": 4,
+        "patch_size": 32,
+        "activation": "softmax",
+        "weight": 9.636556635313848e-05,
+        "momentum": 8.484905153052655e-08,
+        "optimizer": "AdamW"
+    }
+}

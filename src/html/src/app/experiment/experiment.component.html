@@ -1,5 +1,5 @@
 <div class="loader" *ngIf="showLoader"><img src="assets/img/loader-preview.svg" alt="loading"></div>
-<div class="main-content">
+<div class="main-content" *ngIf="!showLoader">
     <div class="container-fluid">
         <div class="row" *ngIf="!!datasetList">
             <div class="col-md-12">
@@ -58,14 +58,17 @@
                         </div>
                          <div class="row" *ngIf="!!selected_trial">
                             <div class="col-md-12">
-
-                                    Name: {{selected_trial.code_name}}<br />
-                                    Model Type: {{selected_trial.model_type}}<br />
-                                    Classes: {{selected_trial.num_classes}}<br />
-                                    Image size: {{selected_trial.image_size}}x{{selected_trial.image_size}}<br />
-                                    <span *ngFor="let score in selected_trial.score; let i = index">
-                                        {{selected_trial.score_names[i]}}: {{score}}<br />
-                                    </span><br />
+                                    <br />
+                                    <label class="category">Name:</label> <br />{{selected_trial.code_name}}<br />
+                                    <label class="category">Model Type:</label> <br />{{selected_trial.model_type}}<br />
+                                    <label class="category">Classes:</label> <br />{{selected_trial.num_classes}}<br />
+                                    <label class="category">Image size:</label> <br />{{selected_trial.image_size}}x{{selected_trial.image_size}}<br />
+                                    <label class="category">Data Transformer name:</label> <br />{{selected_trial.data_transformer_name}} <br />
+                                    <label class="category">Crop nodule?:</label> <br />{{selected_trial.isolate_nodule_image}} <br />
+                                    <label class="category">Detection?:</label> <br />{{selected_trial.detection}} <br />
+                                    <div *ngFor="let score of selected_trial.score; let i = index">
+                                        <label class="category">{{selected_trial.score_names[i]}}:</label><br/> {{score}}<br />
+                                    </div><br />
                             </div>
                          </div>
                     </div>
@@ -86,7 +89,7 @@
                                  <div *ngFor="let i of getDisplayedItems()">
                                     <img [src]="pylungService.getImageUrl(dataset, i)">
                                      <br/>
-                                     <button (click)="predict(i)">Predict - Image {{i}}</button>
+                                     <button *ngIf="!!selected_trial" (click)="predict(i)">Predict - Image {{i}}</button>
 
                                  </div>
                             </div>
@@ -120,16 +123,17 @@
                         <div class="row">
                             <div class="col-md-12">
                                 <ul>
-                                    <li *ngIf="selected_trial.num_classes == 1 || selected_trial.num_classes == 2">Binary Result: {{prediction.binary}}</li>
-                                    <li>Real Result: {{prediction.predicted}}</li>
-                                    <li>Integer Result: {{prediction.predicted_int}}</li>
-                                    <li>Annotation: {{prediction.annotation}}</li>
+                                    <li>Predicted Result: {{prediction.predicted_int}}</li>
+                                    <li>Expected Result: {{prediction.transformed_annotation}}</li>
                                     <li>Timespent (s): {{prediction.timespent}}</li>
+                                    <hr />
+                                    <li>Raw Result: {{prediction.predicted}}</li>
+                                    <li>Raw Annotation: {{prediction.annotation}}</li>
                                 </ul>
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-6" *ngIf="!selected_trial.isolate_nodule_image">
                                 <h5 class="category">Image with a bounding box</h5>
                                 <img [src]="pylungService.getImageUrl(dataset, selected, '', true)"
                                      style="width: 100%; height: auto;">
@@ -141,14 +145,14 @@
                             </div>
                         </div>
 
-                        <div class="row" *ngIf="selected_trial.num_classes == 4">
+                        <div class="row" *ngIf="selected_trial.detection">
                             <div class="col-md-6">
-                                <h5 class="category">Image with a bounding box (Predicted)</h5>
+                                <h5 class="category">Image with a bounding box (Predicted)</h5><br/>
                                 <img [src]="pylungService.getImageUrl(dataset, selected, prediction.predicted.join(','), true)"
                                      style="width: 100%; height: auto;">
                             </div>
                             <div class="col-md-6">
-                                <h5 class="category">Cropped image (Predicted)</h5>
+                                <h5 class="category">Cropped image (Predicted)</h5><br/>
                                 <img [src]="pylungService.getImageUrl(dataset, selected, prediction.predicted.join(','), false, true)"
                                      style="width: 100%; height: auto;">
                             </div>

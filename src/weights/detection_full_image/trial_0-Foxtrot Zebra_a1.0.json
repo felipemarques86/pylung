@@ -1,0 +1,72 @@
+{
+    "trial_id": "0",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 200,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Foxtrot Zebra",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.108835369348526,
+        1.0
+    ],
+    "score_names": [
+        "loss",
+        "mean_io_u"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.11186647415161133,
+            0.1112942323088646,
+            0.11110900342464447,
+            0.11092309653759003,
+            0.11084435135126114
+        ],
+        "mean_io_u": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "val_loss": [
+            0.10909012705087662,
+            0.10900650173425674,
+            0.10893876850605011,
+            0.10886377096176147,
+            0.10883544385433197
+        ],
+        "val_mean_io_u": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 0.0020363213531246717,
+        "projection_dim": 94,
+        "num_heads": 4,
+        "drop_out_1": 0.09314086272226216,
+        "drop_out_2": 0.01142698649986228,
+        "drop_out_3": 0.014327139777656839,
+        "transformer_layers": 6,
+        "patch_size": 16,
+        "activation": "softmax",
+        "weight": 7.775830148952358e-05,
+        "momentum": 6.644523174358246e-08,
+        "optimizer": "SGD"
+    }
+}

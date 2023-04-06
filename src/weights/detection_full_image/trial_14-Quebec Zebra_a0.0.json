@@ -1,0 +1,72 @@
+{
+    "trial_id": "14",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 200,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Quebec Zebra",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.28943246603012085,
+        0.0
+    ],
+    "score_names": [
+        "loss",
+        "bounding_box_intersection_over_union_tf"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.2784522473812103,
+            0.29233697056770325,
+            0.29234975576400757,
+            0.29236966371536255,
+            0.29234254360198975
+        ],
+        "bounding_box_intersection_over_union_tf": [
+            0.036892447620630264,
+            5.604105695056205e-07,
+            7.122636361600598e-06,
+            0.00019047794921789318,
+            6.528866833832581e-06
+        ],
+        "val_loss": [
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324
+        ],
+        "val_bounding_box_intersection_over_union_tf": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 0.0007591142565463312,
+        "projection_dim": 118,
+        "num_heads": 4,
+        "drop_out_1": 0.150967631253359,
+        "drop_out_2": 0.2998520259992157,
+        "drop_out_3": 0.03964035066324746,
+        "transformer_layers": 3,
+        "patch_size": 32,
+        "activation": "softmax",
+        "weight": 1.2157528600310901e-08,
+        "momentum": 2.284181379589439e-08,
+        "optimizer": "AdamW"
+    }
+}

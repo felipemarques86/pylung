@@ -1,0 +1,136 @@
+{
+    "trial_id": "2",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 1000,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "categorical_crossentropy",
+    "code_name": "Victor Eland",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        1479.7197265625,
+        0.3677830994129181,
+        0.0,
+        12540.0,
+        0.0,
+        0.0
+    ],
+    "score_names": [
+        "loss",
+        "accuracy",
+        "false_positives",
+        "false_negatives",
+        "true_negatives",
+        "true_positives"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            1489.379150390625,
+            1489.2288818359375,
+            1489.2437744140625,
+            1489.268798828125,
+            1489.2440185546875
+        ],
+        "accuracy": [
+            0.3280170261859894,
+            0.3267543911933899,
+            0.3242955803871155,
+            0.33346623182296753,
+            0.3288809061050415
+        ],
+        "false_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "false_negatives": [
+            72732.0,
+            60192.0,
+            60192.0,
+            60192.0,
+            60192.0
+        ],
+        "true_negatives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "true_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_loss": [
+            1479.764892578125,
+            1479.75390625,
+            1479.743896484375,
+            1479.7305908203125,
+            1479.719970703125
+        ],
+        "val_accuracy": [
+            0.3671451210975647,
+            0.3671451210975647,
+            0.3674641251564026,
+            0.3681020736694336,
+            0.3677830994129181
+        ],
+        "val_false_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_false_negatives": [
+            12540.0,
+            12540.0,
+            12540.0,
+            12540.0,
+            12540.0
+        ],
+        "val_true_negatives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_true_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 4.722901352188481e-09,
+        "projection_dim": 102,
+        "num_heads": 6,
+        "drop_out_1": 0.2928555971404976,
+        "drop_out_2": 0.1262132109400958,
+        "drop_out_3": 0.05656486934354798,
+        "transformer_layers": 4,
+        "patch_size": 64,
+        "activation": "softmax",
+        "weight": 1.2504725255332485e-08,
+        "momentum": 5.0503847836570834e-08,
+        "optimizer": "SGD"
+    }
+}

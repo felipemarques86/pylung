@@ -84,14 +84,14 @@ def load_module(module):
 
 def get_model(model_type, image_size, batch_size, epochs, num_classes, loss, data, metrics,
               code_name=None, save_weights=False, static_params=False, params=[], data_transformer_name=None,
-              return_model_only=False, weights_file=None, detection=False):
+              return_model_only=False, weights_file=None, detection=False, isolate_nodule_image=False):
     m = load_module(model_type)
     modelDef: CustomModelDefinition = m.ModelDefinition()
     return modelDef.build(image_size=image_size, batch_size=batch_size, epochs=epochs,
                           num_classes=num_classes, loss=loss, data=data, metrics=metrics,
                           code_name=code_name, save_weights=save_weights, static_params=static_params, params=params,
                           data_transformer_name=data_transformer_name, return_model_only=return_model_only,
-                          weights_file=weights_file, detection=detection)
+                          weights_file=weights_file, detection=detection, isolate_nodule_image=isolate_nodule_image)
 
 
 # deprecated

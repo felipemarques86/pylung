@@ -1,0 +1,136 @@
+{
+    "trial_id": "0",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 500,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "categorical_crossentropy",
+    "code_name": "Romeo Eland",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        2.1034325736266138e+17,
+        0.0,
+        0.0,
+        9405.0,
+        0.0,
+        3135.0
+    ],
+    "score_names": [
+        "loss",
+        "accuracy",
+        "false_positives",
+        "false_negatives",
+        "true_negatives",
+        "true_positives"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            78546231296.0,
+            24564677476352.0,
+            927086743126016.0,
+            1.2685519842443264e+16,
+            9.471211200525107e+16
+        ],
+        "accuracy": [
+            0.0021265284158289433,
+            0.00013290802598930895,
+            0.0002658160519786179,
+            0.0005316321039572358,
+            0.0
+        ],
+        "false_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "false_negatives": [
+            45644.0,
+            45144.0,
+            45144.0,
+            45144.0,
+            45144.0
+        ],
+        "true_negatives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "true_positives": [
+            14548.0,
+            15048.0,
+            15048.0,
+            15048.0,
+            15048.0
+        ],
+        "val_loss": [
+            799374049280.0,
+            124797027614720.0,
+            3201566601379840.0,
+            3.383448749001933e+16,
+            2.103432401827922e+17
+        ],
+        "val_accuracy": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_false_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_false_negatives": [
+            9405.0,
+            9405.0,
+            9405.0,
+            9405.0,
+            9405.0
+        ],
+        "val_true_negatives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_true_positives": [
+            3135.0,
+            3135.0,
+            3135.0,
+            3135.0,
+            3135.0
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 0.004764867636712851,
+        "projection_dim": 82,
+        "num_heads": 4,
+        "drop_out_1": 0.3070801108328341,
+        "drop_out_2": 0.0358484873899372,
+        "drop_out_3": 0.03562985502091157,
+        "transformer_layers": 4,
+        "patch_size": 32,
+        "activation": "softmax",
+        "weight": 1.6869140576803934e-07,
+        "momentum": 0.01598513329114711,
+        "optimizer": "AdamW"
+    }
+}

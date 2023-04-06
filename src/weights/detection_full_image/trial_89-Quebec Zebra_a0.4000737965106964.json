@@ -1,0 +1,72 @@
+{
+    "trial_id": "89",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 200,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Quebec Zebra",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.10634809732437134,
+        0.4000737965106964
+    ],
+    "score_names": [
+        "loss",
+        "bounding_box_intersection_over_union_tf"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.11174994707107544,
+            0.11052626371383667,
+            0.10990440845489502,
+            0.10942190140485764,
+            0.10916426032781601
+        ],
+        "bounding_box_intersection_over_union_tf": [
+            0.3905208706855774,
+            0.39379647374153137,
+            0.3949073851108551,
+            0.3955686390399933,
+            0.3958986699581146
+        ],
+        "val_loss": [
+            0.1081763356924057,
+            0.10764579474925995,
+            0.10687325894832611,
+            0.10654473304748535,
+            0.10634809732437134
+        ],
+        "val_bounding_box_intersection_over_union_tf": [
+            0.3983878791332245,
+            0.3963112235069275,
+            0.39936286211013794,
+            0.4002227187156677,
+            0.40007370710372925
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 9.61437635551888e-06,
+        "projection_dim": 76,
+        "num_heads": 2,
+        "drop_out_1": 0.1234786869495565,
+        "drop_out_2": 0.13349244275869496,
+        "drop_out_3": 0.1067963203733904,
+        "transformer_layers": 5,
+        "patch_size": 32,
+        "activation": "softmax",
+        "weight": 1.0852005223074956e-08,
+        "momentum": 2.71275258354636e-08,
+        "optimizer": "AdamW"
+    }
+}

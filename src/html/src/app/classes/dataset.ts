@@ -24,6 +24,7 @@ export interface Prediction {
     binary: number;
     predicted_int: number[];
     annotation: string;
+    transformed_annotation: string;
     timespent: number;
 }
 
@@ -48,7 +49,9 @@ export interface Trial {
     version: number,
     data_transformer_name: string,
     history: TrialHistory,
-    learning_params: LearningParams
+    learning_params: LearningParams,
+    isolate_nodule_image: boolean,
+    detection: boolean
 }
 
 export interface LearningParams {

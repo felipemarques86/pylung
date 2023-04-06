@@ -1,0 +1,92 @@
+{
+    "trial_id": "8",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 150,
+    "epochs": 10,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Papa Zebra",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.3295656740665436,
+        0.0
+    ],
+    "score_names": [
+        "loss",
+        "bounding_box_intersection_over_union_tf"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.32441988587379456,
+            0.3290749788284302,
+            0.3290750980377197,
+            0.32907503843307495,
+            0.3290751278400421,
+            0.32907503843307495,
+            0.3290751278400421,
+            0.3290749788284302,
+            0.3290749192237854,
+            0.32907503843307495
+        ],
+        "bounding_box_intersection_over_union_tf": [
+            0.009700591675937176,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_loss": [
+            0.3295656144618988,
+            0.3295656144618988,
+            0.3295656144618988,
+            0.3295656144618988,
+            0.3295656144618988,
+            0.3295656144618988,
+            0.3295656144618988,
+            0.3295656144618988,
+            0.3295656144618988,
+            0.3295656144618988
+        ],
+        "val_bounding_box_intersection_over_union_tf": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 0.005017196562659691,
+        "projection_dim": 70,
+        "num_heads": 2,
+        "drop_out_1": 0.0264185744295952,
+        "drop_out_2": 0.02837246502523822,
+        "drop_out_3": 0.020672789878681576,
+        "transformer_layers": 4,
+        "patch_size": 64,
+        "activation": "softmax",
+        "weight": 8.152342535877105e-08,
+        "momentum": 1.1354122497260995e-08,
+        "optimizer": "AdamW"
+    }
+}

@@ -1,0 +1,72 @@
+{
+    "trial_id": "64",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 200,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Quebec Zebra",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.10590235888957977,
+        0.4005797505378723
+    ],
+    "score_names": [
+        "loss",
+        "bounding_box_intersection_over_union_tf"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.11037065833806992,
+            0.10921187698841095,
+            0.10868440568447113,
+            0.10839905589818954,
+            0.10811615735292435
+        ],
+        "bounding_box_intersection_over_union_tf": [
+            0.3953450620174408,
+            0.39711275696754456,
+            0.39776912331581116,
+            0.39782214164733887,
+            0.39812788367271423
+        ],
+        "val_loss": [
+            0.10734321177005768,
+            0.10654661059379578,
+            0.10627377033233643,
+            0.10613106191158295,
+            0.10590246319770813
+        ],
+        "val_bounding_box_intersection_over_union_tf": [
+            0.39910179376602173,
+            0.4016401469707489,
+            0.40068522095680237,
+            0.40098801255226135,
+            0.4005793631076813
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 6.710155800233298e-06,
+        "projection_dim": 112,
+        "num_heads": 2,
+        "drop_out_1": 0.1058985587575758,
+        "drop_out_2": 0.15387343339970455,
+        "drop_out_3": 0.013895043099038199,
+        "transformer_layers": 4,
+        "patch_size": 32,
+        "activation": "softmax",
+        "weight": 2.2047592258185373e-06,
+        "momentum": 3.0596745503123924e-05,
+        "optimizer": "AdamW"
+    }
+}

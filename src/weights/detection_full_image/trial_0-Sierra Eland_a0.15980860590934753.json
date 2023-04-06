@@ -1,0 +1,136 @@
+{
+    "trial_id": "0",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 300,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "categorical_crossentropy",
+    "code_name": "Sierra Eland",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        1470.4517822265625,
+        0.15980860590934753,
+        0.0,
+        12540.0,
+        0.0,
+        0.0
+    ],
+    "score_names": [
+        "loss",
+        "accuracy",
+        "false_positives",
+        "false_negatives",
+        "true_negatives",
+        "true_positives"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            1476.649169921875,
+            1476.663818359375,
+            1476.7586669921875,
+            1476.77392578125,
+            1476.77685546875
+        ],
+        "accuracy": [
+            0.37599679827690125,
+            0.5362839102745056,
+            0.5954279899597168,
+            0.607123851776123,
+            0.5338250994682312
+        ],
+        "false_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "false_negatives": [
+            60192.0,
+            60192.0,
+            60192.0,
+            60192.0,
+            60192.0
+        ],
+        "true_negatives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "true_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_loss": [
+            1470.2158203125,
+            1470.4093017578125,
+            1470.4454345703125,
+            1470.451171875,
+            1470.4520263671875
+        ],
+        "val_accuracy": [
+            0.54194575548172,
+            0.6063795685768127,
+            0.6149920225143433,
+            0.6162679195404053,
+            0.15980860590934753
+        ],
+        "val_false_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_false_negatives": [
+            12540.0,
+            12540.0,
+            12540.0,
+            12540.0,
+            12540.0
+        ],
+        "val_true_negatives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_true_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 2.3805504525809263e-07,
+        "projection_dim": 82,
+        "num_heads": 8,
+        "drop_out_1": 0.023953796451857353,
+        "drop_out_2": 0.13688781690069823,
+        "drop_out_3": 0.016035613992019707,
+        "transformer_layers": 14,
+        "patch_size": 64,
+        "activation": "softmax",
+        "weight": 0.005833267418209796,
+        "momentum": 2.5382667475103814e-08,
+        "optimizer": "AdamW"
+    }
+}

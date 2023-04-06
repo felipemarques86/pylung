@@ -1,0 +1,72 @@
+{
+    "trial_id": "0",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 200,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Victor Giraffe",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.10890191793441772,
+        0.10889621824026108
+    ],
+    "score_names": [
+        "loss",
+        "mean_squared_error"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.2895676791667938,
+            0.30297353863716125,
+            0.30761268734931946,
+            0.27963125705718994,
+            0.11084213107824326
+        ],
+        "mean_squared_error": [
+            0.2898329794406891,
+            0.30287909507751465,
+            0.30753034353256226,
+            0.2780357301235199,
+            0.11102782934904099
+        ],
+        "val_loss": [
+            0.28943249583244324,
+            0.30756476521492004,
+            0.30756476521492004,
+            0.10908909142017365,
+            0.10890192538499832
+        ],
+        "val_mean_squared_error": [
+            0.289194256067276,
+            0.307616651058197,
+            0.307616651058197,
+            0.1089768260717392,
+            0.10879004001617432
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 0.006484675238150132,
+        "projection_dim": 114,
+        "num_heads": 8,
+        "drop_out_1": 0.09867748959089237,
+        "drop_out_2": 0.022200022894718795,
+        "drop_out_3": 0.02905054203565817,
+        "transformer_layers": 4,
+        "patch_size": 64,
+        "activation": "softmax",
+        "weight": 0.005897719351925536,
+        "momentum": 5.598473886564032e-06,
+        "optimizer": "AdamW"
+    }
+}

@@ -1,0 +1,72 @@
+{
+    "trial_id": "1",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 200,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Tango Giraffe",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.10898594558238983,
+        1.0
+    ],
+    "score_names": [
+        "loss",
+        "mean_io_u"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.11432140320539474,
+            0.11277525126934052,
+            0.11224767565727234,
+            0.11185824126005173,
+            0.11180586367845535
+        ],
+        "mean_io_u": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "val_loss": [
+            0.11036165058612823,
+            0.10953082889318466,
+            0.10919799655675888,
+            0.10905972868204117,
+            0.10898591578006744
+        ],
+        "val_mean_io_u": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 0.0025483586080545387,
+        "projection_dim": 102,
+        "num_heads": 2,
+        "drop_out_1": 0.09931909634437337,
+        "drop_out_2": 0.2874989407807551,
+        "drop_out_3": 0.1543596372076648,
+        "transformer_layers": 2,
+        "patch_size": 64,
+        "activation": "softmax",
+        "weight": 0.00023450578750525174,
+        "momentum": 0.0001472549709031207,
+        "optimizer": "SGD"
+    }
+}

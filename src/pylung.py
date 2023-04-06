@@ -578,7 +578,7 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
 
     objective = get_model(model_type=model_type, image_size=image_size, batch_size=batch_size,
                                                num_classes=num_classes, loss=loss, epochs=epochs, data=data,
-                                               metrics=metrics, save_weights=True, code_name=code_name,
+                                               metrics=metrics, save_weights=True, code_name=code_name, isolate_nodule_image=isolate_nodule_image,
                                                data_transformer_name=data_transformer_name, detection=detection)
 
     optuna_study.optimize(objective, n_trials=n_trials) #, timeout=600)
@@ -699,21 +699,6 @@ def get_annotation_ds(ds_type, ds_name, index):
 def predict_nodule(trial, ds_type, ds_name, index):
     image = None
     annotation = None
-    query = request.query
-    crop = False
-
-    try:
-        crop = query['crop'] == 'True' or query['crop'] == 'true'
-    except:
-        crop = False
-
-    detection = False
-    try:
-        detection = query['detection'] == 'True' or query['detection'] == 'true'
-    except:
-        detection = False
-
-
 
     directory = config['DATASET'][f'processed_{ds_type}_location']
     with open(directory + f'/{ds_name}/image-{index}.raw', 'rb') as file:
@@ -731,23 +716,22 @@ def predict_nodule(trial, ds_type, ds_name, index):
                        data_transformer_name=json_data['data_transformer_name'],
                        params=json_data['learning_params'], return_model_only=True, batch_size=json_data['batch_size'],
                        epochs=json_data['epochs'], num_classes=json_data['num_classes'], loss=json_data['loss'],
-                       data=None,detection=detection
+                       data=None,detection=json_data['detection'], isolate_nodule_image=json_data['isolate_nodule_image']
                        )
 
     model = model_(None)
     model.load_weights('weights/' + trial.replace('$', '/') + '.h5')
-    im = img_transformer(json_data['image_size'], json_data['image_channels'], crop)(image, annotation, None, None)
+    im = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(image, annotation, None, None)
     vectorized_image = np.expand_dims(im, axis=0)
     start = time.time()
     output = model.predict(vectorized_image)
     end = time.time()
-    binary = round(output[0][1])
 
     ret = {
         'predicted': output[0].tolist(),
-        'binary': binary,
         'predicted_int': output[0].round().astype(int).tolist(),
         'annotation': str(annotation),
+        'transformed_annotation': data_transformer(annotation, None, None, None),
         'timespent': end-start
     }
 

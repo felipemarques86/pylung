@@ -1,0 +1,72 @@
+{
+    "trial_id": "62",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 200,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Quebec Zebra",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.10531749576330185,
+        0.39700013399124146
+    ],
+    "score_names": [
+        "loss",
+        "bounding_box_intersection_over_union_tf"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.11074893921613693,
+            0.10915464907884598,
+            0.10827134549617767,
+            0.10772114992141724,
+            0.10714180767536163
+        ],
+        "bounding_box_intersection_over_union_tf": [
+            0.39309439063072205,
+            0.39624109864234924,
+            0.3976229727268219,
+            0.3981168866157532,
+            0.39907020330429077
+        ],
+        "val_loss": [
+            0.1093878373503685,
+            0.10606365650892258,
+            0.10615944862365723,
+            0.10530148446559906,
+            0.10531743615865707
+        ],
+        "val_bounding_box_intersection_over_union_tf": [
+            0.38491299748420715,
+            0.4026651382446289,
+            0.39526936411857605,
+            0.40026983618736267,
+            0.39700034260749817
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 4.234364442925843e-05,
+        "projection_dim": 124,
+        "num_heads": 2,
+        "drop_out_1": 0.09372119199623082,
+        "drop_out_2": 0.12330168796321013,
+        "drop_out_3": 0.0293972333082583,
+        "transformer_layers": 5,
+        "patch_size": 32,
+        "activation": "softmax",
+        "weight": 1.7532086754753727e-07,
+        "momentum": 4.839563726273208e-06,
+        "optimizer": "AdamW"
+    }
+}

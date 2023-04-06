@@ -1,0 +1,72 @@
+{
+    "trial_id": "77",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 200,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Quebec Zebra",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.10874839872121811,
+        0.4006309509277344
+    ],
+    "score_names": [
+        "loss",
+        "bounding_box_intersection_over_union_tf"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.11609915643930435,
+            0.11116935312747955,
+            0.11098414659500122,
+            0.11092734336853027,
+            0.11087334156036377
+        ],
+        "bounding_box_intersection_over_union_tf": [
+            0.3778636157512665,
+            0.3907228410243988,
+            0.3929942548274994,
+            0.3936338722705841,
+            0.3935858905315399
+        ],
+        "val_loss": [
+            0.1092272475361824,
+            0.10885178297758102,
+            0.10894181579351425,
+            0.10884248465299606,
+            0.10874839872121811
+        ],
+        "val_bounding_box_intersection_over_union_tf": [
+            0.39129018783569336,
+            0.39671990275382996,
+            0.3952980637550354,
+            0.3962046205997467,
+            0.400630921125412
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 0.0004549154021389622,
+        "projection_dim": 96,
+        "num_heads": 8,
+        "drop_out_1": 0.19047674379106005,
+        "drop_out_2": 0.07095431988002018,
+        "drop_out_3": 0.137555383848476,
+        "transformer_layers": 6,
+        "patch_size": 32,
+        "activation": "softmax",
+        "weight": 9.928159029053884e-08,
+        "momentum": 5.607140619910392e-07,
+        "optimizer": "AdamW"
+    }
+}

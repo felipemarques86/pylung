@@ -1,0 +1,92 @@
+{
+    "trial_id": "13",
+    "model_type": "vit",
+    "image_size": 128,
+    "batch_size": 200,
+    "epochs": 10,
+    "num_classes": 4,
+    "loss": "mse",
+    "code_name": "Echo Hartebeest",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        0.28943246603012085,
+        0.0
+    ],
+    "score_names": [
+        "loss",
+        "bounding_box_intersection_over_union_tf"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.2885136306285858,
+            0.29140976071357727,
+            0.2914097309112549,
+            0.29140985012054443,
+            0.2914097309112549,
+            0.29140982031822205,
+            0.29140982031822205,
+            0.29140976071357727,
+            0.29140985012054443,
+            0.29140982031822205
+        ],
+        "bounding_box_intersection_over_union_tf": [
+            0.007669453043490648,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_loss": [
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324,
+            0.28943249583244324
+        ],
+        "val_bounding_box_intersection_over_union_tf": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 0.009203464116117747,
+        "projection_dim": 78,
+        "num_heads": 8,
+        "drop_out_1": 0.10887637428819388,
+        "drop_out_2": 0.06988629832561251,
+        "drop_out_3": 0.056040141741911825,
+        "transformer_layers": 4,
+        "patch_size": 32,
+        "activation": "softmax",
+        "weight": 0.02488015996021388,
+        "momentum": 1.1710202218639849e-07,
+        "optimizer": "Nadam"
+    }
+}

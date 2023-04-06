@@ -137,62 +137,62 @@ def filter_out_class0_malignancy(data):
 # Problem reduction functions - these functions determine which classes are going to be used and how they are grouped
 
 # Any image with ML != 0 is considered an image with nodule
-def binary_non_module(data, _1, _2):
+def binary_non_module(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 0:
         return [0]
     return [1]
 
 # Images with ML = [0,1,2] are BENIGN=[1, 0] and [3,4,5] are MALIGNANT=[0, 1]
-def one_hot_two_non_nodule(data, _1, _2):
+def one_hot_two_non_nodule(data, _1, _2, _3):
     if data[LIDC_ANN_ML] > 0:
         return [0, 1]  # malignant
     return [1, 0]
 
 # Images with ML = [0,1,2] are BENIGN=[0] and [3,4,5] are MALIGNANT=[1]
-def binary_malignancy_3benign(data, _1, _2):
+def binary_malignancy_3benign(data, _1, _2, _3):
     clazz = 0
     if data[LIDC_ANN_ML] > 3:
         clazz = 1
     return [clazz]
 
-def one_hot_two_malignancy_3benign(data, _1, _2):
+def one_hot_two_malignancy_3benign(data, _1, _2, _3):
     if data[LIDC_ANN_ML] > 3:
         return [0, 1]  # malignant
     return [1, 0]
 
-def binary_malignancy_3malignant(data, _1, _2):
+def binary_malignancy_3malignant(data, _1, _2, _3):
     if data[LIDC_ANN_ML] > 2:
         return [1]  # malignant
     return [0]
 
 
-def one_hot_two_malignancy_3malignant(data, _1, _2):
+def one_hot_two_malignancy_3malignant(data, _1, _2, _3):
     if data[LIDC_ANN_ML] > 2:
         return [0, 1]  # malignant
     return [1, 0]
 
-def binary_malignancy_cut3(data, _1, _2):
+def binary_malignancy_cut3(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 3:
         return None
     if data[LIDC_ANN_ML] > 2:
         return [1]
     return [0]
 
-def one_hot_two_malignancy_cut3(data, _1, _2):
+def one_hot_two_malignancy_cut3(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 3:
         return None
     if data[LIDC_ANN_ML] > 2:
         return [0, 1]
     return [1, 0]
 
-def binary_malignancy_cut0and3(data, _1, _2):
+def binary_malignancy_cut0and3(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 3 or data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 2:
         return [1]  # malignant
     return [0]
 
-def one_hot_two_malignancy_cut0and3(data, _1, _2):
+def one_hot_two_malignancy_cut0and3(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 3 or data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 2:
@@ -200,7 +200,7 @@ def one_hot_two_malignancy_cut0and3(data, _1, _2):
     return [1, 0]
 
 
-def binary_malignancy_cut0_3benign(data, _1, _2):
+def binary_malignancy_cut0_3benign(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 3:
@@ -208,7 +208,7 @@ def binary_malignancy_cut0_3benign(data, _1, _2):
     return [0]
 
 
-def one_hot_two_malignancy_cut0_3benign(data, _1, _2):
+def one_hot_two_malignancy_cut0_3benign(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 3:
@@ -216,26 +216,26 @@ def one_hot_two_malignancy_cut0_3benign(data, _1, _2):
     return [1, 0]
 
 
-def binary_malignancy_cut0_3malignant(data, _1, _2):
+def binary_malignancy_cut0_3malignant(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 2:
         return [1]  # malignant
     return [0]
 
-def one_hot_two_malignancy_cut0_3malignant(data, _1, _2):
+def one_hot_two_malignancy_cut0_3malignant(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] > 2:
         return [0, 1]  # malignant
     return [1, 0]
 
-def one_hot_six(data, _1, _2):
+def one_hot_six(data, _1, _2, _3):
     ret = [0, 0, 0, 0, 0, 0]
     ret[int(data[LIDC_ANN_ML]-1)] = 1
     return ret
 
-def one_hot_five(data, _1, _2):
+def one_hot_five(data, _1, _2, _3):
     ret = [0, 0, 0, 0, 0]
     if data[LIDC_ANN_ML] == 0:
         return ret
@@ -244,14 +244,14 @@ def one_hot_five(data, _1, _2):
     ret[int(data[LIDC_ANN_ML]-1)] = 1
     return ret
 
-def one_hot_five_cut0(data, _1, _2):
+def one_hot_five_cut0(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 0:
         return None
     ret = [0, 0, 0, 0, 0]
     ret[int(data[LIDC_ANN_ML]-1)] = 1
     return ret
 
-def one_hot_five_cut3(data, _1, _2):
+def one_hot_five_cut3(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 3:
         return None
     if data[LIDC_ANN_ML] == 0:
@@ -265,7 +265,7 @@ def one_hot_five_cut3(data, _1, _2):
     else:
         return [0, 0, 0, 0, 1]
 
-def one_hot_four(data, _1, _2):
+def one_hot_four(data, _1, _2, _3):
     ret = [0, 0, 0, 0]
     if data[LIDC_ANN_ML] == 0:
         return ret
@@ -276,7 +276,7 @@ def one_hot_four(data, _1, _2):
     else:
         return [0, 0, 0, 1]
 
-def one_hot_four_cut0and3(data, _1, _2):
+def one_hot_four_cut0and3(data, _1, _2, _3):
     if data[LIDC_ANN_ML] == 3 or data[LIDC_ANN_ML] == 0:
         return None
     if data[LIDC_ANN_ML] == 1:

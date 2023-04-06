@@ -1,0 +1,136 @@
+{
+    "trial_id": "0",
+    "model_type": "vit",
+    "image_size": 224,
+    "batch_size": 5000,
+    "epochs": 5,
+    "num_classes": 4,
+    "loss": "categorical_crossentropy",
+    "code_name": "Lima Eland",
+    "isolate_nodule_image": false,
+    "detection": true,
+    "static_params": false,
+    "score": [
+        1471.5079345703125,
+        0.31196171045303345,
+        0.0,
+        12540.0,
+        0.0,
+        0.0
+    ],
+    "score_names": [
+        "loss",
+        "accuracy",
+        "false_positives",
+        "false_negatives",
+        "true_negatives",
+        "true_positives"
+    ],
+    "x_train_size": 15048,
+    "y_train_size": 15048,
+    "x_valid_size": 3135,
+    "y_valid_size": 3135,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            1494.902099609375,
+            1493.98779296875,
+            1492.7371826171875,
+            1491.4910888671875,
+            1490.68798828125
+        ],
+        "accuracy": [
+            0.06273259222507477,
+            0.0788809135556221,
+            0.11489898711442947,
+            0.1564992070198059,
+            0.20408028364181519
+        ],
+        "false_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "false_negatives": [
+            60192.0,
+            60192.0,
+            60192.0,
+            60192.0,
+            60191.0
+        ],
+        "true_negatives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "true_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+        ],
+        "val_loss": [
+            1481.1837158203125,
+            1480.1422119140625,
+            1477.8203125,
+            1474.3455810546875,
+            1471.50732421875
+        ],
+        "val_accuracy": [
+            0.001275917049497366,
+            0.005422647576779127,
+            0.03285486623644829,
+            0.23221690952777863,
+            0.31196171045303345
+        ],
+        "val_false_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_false_negatives": [
+            12540.0,
+            12540.0,
+            12540.0,
+            12540.0,
+            12540.0
+        ],
+        "val_true_negatives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ],
+        "val_true_positives": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "learning_params": {
+        "learning_rate": 7.263302554448706e-07,
+        "projection_dim": 100,
+        "num_heads": 6,
+        "drop_out_1": 0.3170664502080174,
+        "drop_out_2": 0.062319519054317714,
+        "drop_out_3": 0.13085491985949863,
+        "transformer_layers": 2,
+        "patch_size": 64,
+        "activation": "softmax",
+        "weight": 1.5915030677011708e-06,
+        "momentum": 0.04795542408151791,
+        "optimizer": "SGDW"
+    }
+}
