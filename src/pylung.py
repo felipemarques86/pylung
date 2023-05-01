@@ -1,5 +1,4 @@
 import ast
-import asyncio
 import configparser
 import io
 import json
@@ -11,13 +10,10 @@ import subprocess
 import time
 import traceback
 from importlib import reload
-from io import BytesIO
 from json import dumps
 from urllib.parse import parse_qs
 from urllib.parse import urlparse
 
-import PIL.Image
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import optuna
@@ -30,7 +26,6 @@ from colorama import init as colorama_init
 from matplotlib import patches
 from optuna.samplers import TPESampler
 from prettytable import PrettyTable
-import tensorflow as tf
 
 from main.dataset_utilities.dataset_reader_classes import DatasetTransformer
 from main.dataset_utilities.lidc_dataset_reader_classes import LidcDatasetReader, CustomLidcDatasetReader
@@ -117,6 +112,15 @@ def deflate_ds(name: str, _type: str, new_name: str):
         error(f'Type {_type} is currently not supported')
 
 
+# This is a Python function that creates a dataset for machine learning tasks. The function takes in several input parameters including the name of the dataset, the type of the dataset, the size of the images, and other parameters related to the dataset creation process.
+#
+# The function first checks if a dataset with the specified name already exists, and if it does, it provides a warning message. If the dataset does not exist, it creates a new directory for it and saves the dataset's configuration in a file named config.ini.
+#
+# If the dataset type is lidc_idri, the function creates a LidcDatasetReader object with the specified parameters and loads the dataset. It then saves the dataset and if stop_after_current_part is not set to True, it iteratively loads the next part of the dataset until there are no more parts to load. It also updates the num_parts parameter in the config.ini file.
+#
+# If the dataset type is not lidc_idri, the function raises an error stating that the dataset type is not currently supported.
+#
+# In summary, this function creates a dataset and saves its configuration file, and if the dataset type is lidc_idri, it loads and saves the dataset parts iteratively.
 @app.command("create_dataset")
 def create_dataset(name: str, type: str, image_size: int = 512, consensus_level: float = 0.5, pad: int = 0,
                    current_part: int = 0, part_size: int = 100, stop_after_current_part: bool = False):
@@ -216,8 +220,19 @@ def navigate_dataset(dataset_name: str, _type: str, data_transformer_name=None, 
     dataset_reader.load_custom()
     display_dataset_images(dataset_reader)
 
-
 @app.command("dataset_details")
+# This is a Python function that takes in several parameters related to a dataset and applies various data and image transformations to it. The input parameters are:
+#
+# dataset_name: the name of the dataset to be processed
+# _type: the type of the dataset, e.g. 'train' or 'test'
+# data_transformer_name: the name of a data transformer to be applied to the dataset
+# image_size: the size to which images in the dataset will be resized
+# isolate_nodule_image: a boolean flag indicating whether to isolate only the nodule in the images
+# channels: the number of channels in the images
+# train_size: the proportion of the dataset to be used for training (default is 0.8)
+# dump_annotations_to_file: a boolean flag indicating whether to dump the annotations to a file
+# The function then reads the configuration information for the dataset and uses it to create a custom dataset reader. It loads and shuffles the data and then applies the requested data and image transformations. Finally, it loads the transformed data and outputs statistics on the dataset before and after the transformations. If dump_annotations_to_file is True, it also saves the annotations to a file.
+
 def dataset_details(dataset_name: str, _type: str, data_transformer_name=None, image_size: int = -1, isolate_nodule_image: bool = False, channels: int = -1, train_size: float = 0.8, dump_annotations_to_file: bool=False):
     directory = config['DATASET'][f'processed_{_type}_location']
     dataset_reader = CustomLidcDatasetReader(location=directory + '/' + dataset_name + '/')
@@ -445,7 +460,15 @@ def get_trial(trial: str):
 
     return json_data
 
-
+# This function, called models(), lists and inspects all the models in a specific directory, with the goal of extracting relevant information from each one of them.
+#
+# First, the function sets the directory path for the model registry. Then it initializes three empty lists: details_list, incomplete_models_list, and error_list, which will be populated with the model information.
+#
+# The function then iterates over each file in the directory and attempts to load it as a module. If it succeeds, it checks whether the module contains a ModelDefinition object. If it does, it calls the details() method of the object to get additional information about the model and appends the details to details_list. If it does not, it appends the module name to the incomplete_models_list.
+#
+# If the module fails to load, the function appends an error message to the error_list. Two types of errors are handled: syntax errors and other runtime exceptions. Syntax errors contain information about the line number and the error message. Other exceptions only contain a general error message.
+#
+# Finally, the function returns a dictionary containing the populated details_list, incomplete_models_list, and error_list.
 @app.command("list_models")
 def models():
     directory = os.path.dirname(os.path.realpath(__file__)) + '/main/model_registry/classification'
@@ -519,6 +542,15 @@ def train(batch_size: int, epochs: int, train_size: float, image_size: int, mode
                                                static_params=True, params=params_arr, data_transformer_name=data_transformer_name)
     print(f'Accuracy = {objective(None)}')
 
+# This function is used to conduct a hyperparameter optimization study for a machine learning model. It takes in several arguments such as batch size, epochs, train size, image size, model type, number of trials, and others.
+#
+# The function first creates an Optuna study with the specified study name and storage location. Then, it sets the user attributes for the study, such as batch size, epochs, and model type.
+#
+# It then creates a table to display the hyperparameters that will be optimized during the study. It loads the dataset and gets the necessary information such as the number of classes, data transformer, loss, and metrics.
+#
+# Next, it creates an objective function that takes in the hyperparameters to optimize and trains the model. The objective function returns the validation accuracy of the model.
+#
+# Finally, the function calls the Optuna study's optimize method to run the study and find the best hyperparameters. It prints out the number of finished trials and sets the STUDY_RUNNING variable to false.
 @app.command("study")
 def study(batch_size: int, epochs: int, train_size: float, image_size: int, model_type: str, n_trials: int,
           data_transformer_name: str, data_set: str, db_name: str, centroid_only: bool = False, isolate_nodule_image: bool = True, detection: bool = False):

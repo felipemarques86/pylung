@@ -35,12 +35,12 @@ class ModelDefinition(CustomModelDefinition):
             self.clear_session()
 
             if static_params is False:
-                learning_rate = trial.suggest_float("Learning Rate", 1e-6, 1e-1, log=True)
+                learning_rate = trial.suggest_float("Learning Rate", 1e-10, 1e-1, log=True)
                 drop_out = trial.suggest_float("Drop Out", 0.1, 0.6, log=True)
-                activation = trial.suggest_categorical("activation", ['softmax', 'sigmoid'])
-                weight = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
-                momentum = trial.suggest_float("Momentum", 1e-7, 1e-1, log=True)
-                optimizer = trial.suggest_categorical("Optimizer", ['AdamW', 'SGDW', 'SGD'])
+                activation = trial.suggest_categorical("activation", ['sigmoid'])
+                weight = trial.suggest_float("weight_decay", 1e-8, 1e-1, log=True)
+                momentum = trial.suggest_float("Momentum", 1e-8, 1e-1, log=True)
+                optimizer = trial.suggest_categorical("Optimizer", ['AdamW', 'SGDW', 'SGD', 'RMSProp'])
             else:
                 learning_rate = float(params['learning_rate'])
                 drop_out = float(params['drop_out'])
@@ -103,9 +103,9 @@ class ModelDefinition(CustomModelDefinition):
             train_params = self.train_parameters(model_type, image_size, batch_size, epochs, num_classes, loss, code_name,
                                             save_weights, static_params, data_transformer_name, activation, drop_out,
                                             history, learning_rate, model, model_, momentum,
-                                            optimizer, score, trial_id, weight, x_train, x_valid, y_train, y_valid)
+                                            optimizer, score, trial_id, weight, x_train, x_valid, y_train, y_valid, isolate_nodule_image, detection)
 
-            self.save_model('resnet50', model, save_weights, code_name, str(score[1]), trial, train_params)
+            self.save_model('resnet50', model, save_weights, code_name, str(score[1]), trial, train_params, isolate_nodule_image, detection, data_transformer_name)
 
             if detection:
                 return score[1]
@@ -116,7 +116,7 @@ class ModelDefinition(CustomModelDefinition):
     def train_parameters(self, model_type, image_size, batch_size, epochs, num_classes, loss, code_name, save_weights,
                          static_params, data_transformer_name, activation, drop_out, history, learning_rate, model,
                          model_,
-                         momentum, optimizer, score, trial_id, weight, x_train, x_valid, y_train, y_valid):
+                         momentum, optimizer, score, trial_id, weight, x_train, x_valid, y_train, y_valid, isolate_nodule_image, detection):
         train_params = {
             'trial_id': trial_id,
             'model_type': model_type,

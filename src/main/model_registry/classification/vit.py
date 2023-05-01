@@ -50,7 +50,7 @@ class ModelDefinition(CustomModelDefinition):
                 if detection:
                     activation = 'softmax'
                 else:
-                    activation = trial.suggest_categorical("Activation", ['softmax', 'sigmoid'])
+                    activation = trial.suggest_categorical("Activation", ['sigmoid'])
                 weight = trial.suggest_float("Weight", 1e-8, 1e-1, log=True)
                 momentum = trial.suggest_float("Momentum", 1e-8, 1e-1, log=True)
                 optimizer = trial.suggest_categorical("Optimizer", ['AdamW', 'SGDW', 'SGD', 'RMSProp', 'Adagrad', 'Adam', 'Adadelta', 'Adamax', 'Nadam', 'Ftrl'])
