@@ -35,7 +35,7 @@ class ModelDefinition(CustomModelDefinition):
 
             if static_params is False:
                 learning_rate = trial.suggest_float("Learning Rate", 1e-6, 1e-1, log=True)
-                activation = trial.suggest_categorical("activation", ['softmax', 'sigmoid'])
+                activation = trial.suggest_categorical("activation", ['sigmoid'])
                 weight = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
                 momentum = trial.suggest_float("Momentum", 1e-7, 1e-1, log=True)
                 optimizer = trial.suggest_categorical("Optimizer", ['SGD'])
@@ -118,7 +118,7 @@ class ModelDefinition(CustomModelDefinition):
                 }
             }
 
-            self.save_model('vgg16', model, save_weights, code_name, str(score[1]), trial, train_params)
+            self.save_model('vgg16', model, save_weights, code_name, str(score[1]), trial, train_params, isolate_nodule_image, detection, data_transformer_name)
 
             if detection:
                 return score[1]

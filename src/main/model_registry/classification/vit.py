@@ -1,3 +1,5 @@
+from optuna.integration import KerasPruningCallback
+
 from main.models.ml_model import CustomModelDefinition
 from main.models.vit_model import VitModel
 
@@ -95,14 +97,14 @@ class ModelDefinition(CustomModelDefinition):
                 metrics=metrics,
             )
 
+            if weights_file is not None:
+                model.load_weights(weights_file)
+
             if return_model_only:
                 self.save_model_as_image(model, model_type)
                 return model
 
             x_train, x_valid, y_train, y_valid = data
-
-            if weights_file is not None:
-                model.load_weights(weights_file)
 
             try:
 
@@ -112,11 +114,13 @@ class ModelDefinition(CustomModelDefinition):
                     validation_data=(x_valid, y_valid),
                     shuffle=True,
                     batch_size=batch_size,
+                    callbacks=[KerasPruningCallback(trial, "val_loss")],
                     epochs=epochs,
                     verbose=1
                 )
 
             except Exception as e:
+                print('Error during fit process')
                 print(str(e))
                 # If there is a crash, fail the trial and save the error message
                 trial.set_user_attr('error', str(e))

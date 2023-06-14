@@ -282,30 +282,100 @@ def get_image_data(dataset_name: str, _type: str, index: int = -1):
         display_original_image_bbox(image, annotations)
 
 
-def get_heatmap(vectorized_image, model, last_conv_layer, pred_index=None):
-    '''
-    Function to visualize grad-cam heatmaps
-    '''
-    gradient_model = tensorflow.keras.models.Model(
-        [model.inputs], [model.get_layer(index=last_conv_layer).output, model.output]
-    )
-
-    # Gradient Computations
-    with tensorflow.GradientTape() as tape:
-        last_conv_layer_output, preds = gradient_model(vectorized_image)
-        if pred_index is None:
-            pred_index = tensorflow.argmax(preds[0])
-        class_channel = preds[:, pred_index]
-
-    grads = tape.gradient(class_channel, last_conv_layer_output)
-    pooled_grads = tensorflow.reduce_mean(grads, axis=(0, 1, 2))
-    last_conv_layer_output = last_conv_layer_output[0]
-    heatmap = last_conv_layer_output @ pooled_grads[..., tensorflow.newaxis]
-    heatmap = tensorflow.squeeze(heatmap)
-    heatmap = tensorflow.maximum(heatmap, 0) / tensorflow.math.reduce_max(heatmap) # Normalize the heatmap
-    return heatmap.numpy()
+def find_target_layer(model):
+    # attempt to find the final convolutional layer in the network
+    # by looping over the layers of the network in reverse order
+    for layer in reversed(model.layers):
+        # check to see if the layer has a 4D output
+        if len(layer.output_shape) == 4:
+            return layer.name
+    # otherwise, we could not find a 4D layer so the GradCAM
+    # algorithm cannot be applied
+    return None
 
 
+@app.command("heatmap")
+def get_heatmap(weight_file_name, dataset_name, _type, index: int):
+    import tensorflow as tf
+    import numpy as np
+    import cv2
+    import matplotlib.pyplot as plt
+
+
+    directory = config['DATASET'][f'processed_{_type}_location']
+    dataset_reader = CustomLidcDatasetReader(location=directory + '/' + dataset_name + '/')
+    dataset_reader.load_custom()
+    image = dataset_reader.images[index]
+
+    with open(weight_file_name + '.json', 'r') as json_fp:
+        json_data = json.load(json_fp)
+
+    _, data_transformer, _, metrics = get_data_transformer(json_data['data_transformer_name'])
+
+    model_ = get_model(model_type=json_data['model_type'], image_size=json_data['image_size'], static_params=True,
+                       metrics=metrics, code_name=json_data['code_name'],
+                       data_transformer_name=json_data['data_transformer_name'],
+                       params=json_data['learning_params'], return_model_only=True, batch_size=json_data['batch_size'],
+                       epochs=json_data['epochs'], num_classes=json_data['num_classes'], loss=json_data['loss'],
+                       data=None
+                       )
+
+    model = model_(None)
+    model.load_weights(weight_file_name + '.h5')
+    if json_data['model_type'] == 'vit':
+        last_conv_layer = model.get_layer('layer_normalization_1')
+    elif json_data['model_type'] == 'vgg16':
+        last_conv_layer = model.get_layer(find_target_layer(model))
+    elif json_data['model_type'] == 'resnet50':
+        last_conv_layer = model.get_layer('resnet50').get_layer('conv5_block3_out')
+
+    # Preprocess the image
+    # x = image.img_to_array(image)
+    annotation = dataset_reader.annotations[index]
+    image = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(image, annotation, None, None)
+    x = np.expand_dims(image, axis=0)
+    #x = preprocess_input(x)
+
+    # Get the output from the last convolutional layer
+
+    grad_model = tf.keras.models.Model([model.inputs], [last_conv_layer.output, model.output])
+
+    # Get the predicted class
+    with tf.GradientTape() as tape:
+        conv_outputs, predictions = grad_model(x)
+        loss = predictions[:, np.argmax(predictions[0])]
+
+    # Get the gradients with respect to the last convolutional layer
+    output = conv_outputs[0]
+    grads = tape.gradient(loss, conv_outputs)[0]
+
+    # Compute the guided gradients
+    positive_grads = tf.cast(grads > 0, 'float32')
+    negative_grads = tf.cast(grads < 0, 'float32')
+    guided_grads = tf.cast(output > 0, 'float32') * positive_grads * grads + tf.cast(output <= 0,
+                                                                                     'float32') * negative_grads * grads
+
+    # Compute the weights using global average pooling
+    weights = tf.reduce_mean(guided_grads, axis=(0, 1))
+
+    # Get the feature map from the last convolutional layer
+    cam = np.ones(output.shape[0:2], dtype=np.float32)
+    for i, w in enumerate(weights):
+        cam += w * output[:, :, i]
+
+    # Resize the heatmap to match the input image size
+    cam = cv2.resize(cam.numpy(), (image.size[0], image.size[1]))  # use size attribute to get image dimensions
+    cam = np.maximum(cam, 0)
+    heatmap = (cam - cam.min()) / (cam.max() - cam.min())
+    heatmap = np.uint8(255 * heatmap)
+
+    # Apply the heatmap to the original image
+    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+    superimposed_img = cv2.addWeighted(cv2.cvtColor(np.uint8(image), cv2.COLOR_RGB2BGR), 0.6, heatmap, 0.4, 0)
+
+    # Plot the original image and the heatmap
+    plt.imshow(cv2.cvtColor(np.uint8(superimposed_img), cv2.COLOR_BGR2RGB))
+    plt.show()
 
 
 @app.command("predict_detection")
@@ -564,12 +634,14 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
     if detection:
         directions = ["minimize", "maximize"]
     else:
+
         directions = ["maximize", "minimize", "maximize"]
 
     code_name = str(get_experiment_codename(int(study_counter)+1))
     optuna_study = optuna.create_study(storage=f'sqlite:///{db_name}.sqlite3', directions=directions,
                                        study_name=f'{code_name}',
-                                       sampler=TPESampler())
+                                       sampler=TPESampler(),
+                                       pruner=optuna.pruners.MedianPruner())
 
     optuna_study.set_user_attr('batch_size', batch_size)
     optuna_study.set_user_attr('epochs', epochs)
