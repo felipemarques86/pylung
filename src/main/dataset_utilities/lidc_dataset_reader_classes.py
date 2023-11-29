@@ -167,6 +167,39 @@ class CustomLidcDatasetReader(LidcDatasetReader):
         table.add_row(['Num parts', self.num_parts])
         return table
 
+    def load_single(self, index, image_size =-1, dry_run=False, walk=False):
+        self.clear()
+        img_size = self.image_size
+        if image_size > 0:
+            img_size = image_size
+
+        with open(self.location + f'image-{index}.raw', 'rb') as file:
+            image = pickle.load(file)
+        with open(self.location + f'annotation-{index}.txt', 'rb') as file:
+            annotation = pickle.load(file)
+
+        ann = None
+        if self.filter is None or not self.filter(annotation):
+            if len(self.dataset_data_transformers) > 0:
+                for j in range(0, len(self.dataset_data_transformers)):
+                        ann = self.dataset_data_transformers[j].execute(annotation, image, self.image_size, img_size)
+                        if ann is not None:
+                            self.annotations.append(ann)
+            else:
+                ann = annotation
+                self.annotations.append(annotation)
+
+            if len(self.dataset_image_transformers) > 0:
+                for j in range(0, len(self.dataset_image_transformers)):
+                    if ann is not None:
+                        self.images.append(self.dataset_image_transformers[j].execute(image, annotation))
+            else:
+                if ann is not None:
+                    self.images.append(image)
+        if len(self.images) == 0:
+            error('Dataset has no images/data!')
+            exit(-1)
+
     def load_custom(self, image_size =-1, dry_run=False, walk=False):
         self.clear()
         img_size = self.image_size
@@ -207,4 +240,5 @@ class CustomLidcDatasetReader(LidcDatasetReader):
             import pickle
             data = pickle.load(filePointer)
         return data
+
 

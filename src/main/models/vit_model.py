@@ -6,7 +6,7 @@ from main.models.ml_model import MlModel
 
 class VitModel(MlModel):
     def __init__(self, name, version, patch_size=0, projection_dim=0, num_heads=0, mlp_head_units=0, dropout1=0, dropout2=0,
-                 dropout3=0, activation=0, transformer_layers=0, image_size=0, num_classes=0, image_channels=0):
+                 dropout3=0, activation=0, transformer_layers=0, image_size=0, num_classes=0, image_channels=0, embeddings_layer=0):
         super().__init__(name, version, num_classes, image_size)
         self.transformer_layers = transformer_layers
         self.activation = activation
@@ -19,6 +19,7 @@ class VitModel(MlModel):
         self.patch_size = patch_size
         self.type = 'VitModel'
         self.image_channels = image_channels
+        self.embeddings_layer = embeddings_layer
 
     def export_as_table(self):
         table = super().export_as_table()
@@ -46,6 +47,7 @@ class VitModel(MlModel):
         self.num_heads = model.num_heads
         self.projection_dim = model.projection_dim
         self.patch_size = model.patch_size
+        self.embeddings_layer = model.embeddings_layer
 
     def build_model(self):
 
@@ -90,6 +92,8 @@ class VitModel(MlModel):
 
         # Create a [batch_size, projection_dim] tensor.
         representation = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
+        self.embeddings_layer = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
+
         representation = layers.Flatten()(representation)
         representation = layers.Dropout(self.dropout3)(representation)
         # Add MLP.
@@ -102,6 +106,11 @@ class VitModel(MlModel):
         # return Keras model.
         self.model = tf.keras.Model(inputs=inputs, outputs=output)
 
+    def get_embeddings_model(self):
+        inputs = self.model.inputs
+        outputs = self.embeddings_layer
+        embeddings_model = tf.keras.Model(inputs=inputs, outputs=outputs)
+        return embeddings_model
 
 class Patches(layers.Layer):
     def __init__(self, patch_size, p_input_shape, p_num_patches, p_projection_dim, p_num_heads, p_transformer_units,

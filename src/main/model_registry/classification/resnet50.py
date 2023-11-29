@@ -21,9 +21,15 @@ class ModelDefinition(CustomModelDefinition):
             'model_name': 'resnet50',
             'parameters': 'Learning Rate, Drop out, Activation, Weight Decay, Momentum, Optimizer',
             'description': 'ResNet-50 is a convolutional neural network that is 50 layers deep. You can load a pretrained version of the network trained on more than a million images from the ImageNet database [1]. The pretrained network can classify images into 1000 object categories, such as keyboard, mouse, pencil, and many animals.',
-            'extra_information': 'Pooling = avg, weigths = imagenet, channels = 3'
+            'extra_information': 'Pooling = avg, weights = imagenet, channels = 3'
         }
         return details
+
+    def io_data(self, model):
+        output = model.get_layer('resnet50').output
+        input = model.get_layer('resnet50').inputs
+        last_conv_layer = model.get_layer('resnet50').get_layer('conv5_block3_out')
+        return input, output, last_conv_layer
 
     def build(self, image_size, batch_size, epochs, num_classes, loss, data, metrics, code_name=None,
               save_weights=False, static_params=False, params=[], data_transformer_name=None, return_model_only=False,
@@ -72,9 +78,6 @@ class ModelDefinition(CustomModelDefinition):
             )
 
             if return_model_only:
-                print('Model details')
-                model.summary()
-                self.save_model_as_image(model, model_type)
                 return model
 
             x_train, x_valid, y_train, y_valid = data

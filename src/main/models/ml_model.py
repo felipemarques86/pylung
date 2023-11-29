@@ -22,6 +22,9 @@ class CustomModelDefinition(ConfigurableObject):
     def _details(self):
         raise Exception('Implement the method details')
 
+    def io_data(self, model):
+        pass
+
     def details(self):
         stringlist =[]
         details = self._details()

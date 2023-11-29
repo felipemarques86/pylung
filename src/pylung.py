@@ -304,8 +304,8 @@ def get_heatmap(weight_file_name, dataset_name, _type, index: int):
 
     directory = config['DATASET'][f'processed_{_type}_location']
     dataset_reader = CustomLidcDatasetReader(location=directory + '/' + dataset_name + '/')
-    dataset_reader.load_custom()
-    image = dataset_reader.images[index]
+    dataset_reader.load_single(index)
+    originalImage = dataset_reader.images[0]
 
     with open(weight_file_name + '.json', 'r') as json_fp:
         json_data = json.load(json_fp)
@@ -322,60 +322,281 @@ def get_heatmap(weight_file_name, dataset_name, _type, index: int):
 
     model = model_(None)
     model.load_weights(weight_file_name + '.h5')
+    output = None
+    input = None
     if json_data['model_type'] == 'vit':
-        last_conv_layer = model.get_layer('layer_normalization_1')
+        input = model.inputs
+        output = model.output
+        model.layers[-1].activation = None
+        last_conv_layer = model.get_layer('layer_normalization')
     elif json_data['model_type'] == 'vgg16':
-        last_conv_layer = model.get_layer(find_target_layer(model))
+        input = model.get_layer('vgg16').inputs
+        output = model.get_layer('vgg16').output
+        model.get_layer('vgg16').summary()
+        model.summary()
+        last_conv_layer = model.get_layer('vgg16').get_layer('block5_conv3')
     elif json_data['model_type'] == 'resnet50':
+        output = model.get_layer('resnet50').output
+        input = model.get_layer('resnet50').inputs
+        model.get_layer('resnet50').summary()
+        model.summary()
         last_conv_layer = model.get_layer('resnet50').get_layer('conv5_block3_out')
 
-    # Preprocess the image
-    # x = image.img_to_array(image)
-    annotation = dataset_reader.annotations[index]
-    image = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(image, annotation, None, None)
+    annotation = dataset_reader.annotations[0]
+    image = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(originalImage, annotation, None, None)
     x = np.expand_dims(image, axis=0)
-    #x = preprocess_input(x)
+    annotation_transformed = data_transformer(annotation, None, None, None)
+    print(annotation_transformed)
 
-    # Get the output from the last convolutional layer
+    grad_model = tf.keras.models.Model([input], [last_conv_layer.output, output])
 
-    grad_model = tf.keras.models.Model([model.inputs], [last_conv_layer.output, model.output])
+    fig, ax = plt.subplots(figsize=(5.12, 5.12))
+    ax.axis('off')
+    rect = patches.Rectangle(
+        (int((annotation[2] / originalImage.shape[0]) * json_data['image_size']),
+         int((annotation[0] / originalImage.shape[0]) * json_data['image_size'])),
+        int((annotation[3] / originalImage.shape[0]) * json_data['image_size'] - (
+                    annotation[2] / originalImage.shape[0]) * json_data['image_size']),
+        int((annotation[1] / originalImage.shape[0]) * json_data['image_size'] - (
+                    annotation[0] / originalImage.shape[0]) * json_data['image_size']),
+        facecolor="none",
+        edgecolor="black",
+        linewidth=2,
+    )
 
-    # Get the predicted class
-    with tf.GradientTape() as tape:
-        conv_outputs, predictions = grad_model(x)
-        loss = predictions[:, np.argmax(predictions[0])]
 
-    # Get the gradients with respect to the last convolutional layer
-    output = conv_outputs[0]
-    grads = tape.gradient(loss, conv_outputs)[0]
+    if json_data['model_type'] == 'vgg16':
 
-    # Compute the guided gradients
-    positive_grads = tf.cast(grads > 0, 'float32')
-    negative_grads = tf.cast(grads < 0, 'float32')
-    guided_grads = tf.cast(output > 0, 'float32') * positive_grads * grads + tf.cast(output <= 0,
-                                                                                     'float32') * negative_grads * grads
+        # Get the predicted class
+        with tf.GradientTape() as tape:
+            conv_outputs, predictions = grad_model(x)
+            print(predictions[0])
+            loss = predictions[:, np.argmax(predictions[0])]
 
-    # Compute the weights using global average pooling
-    weights = tf.reduce_mean(guided_grads, axis=(0, 1))
+        # Get the gradients with respect to the last convolutional layer
+        output = conv_outputs[0]
+        grads = tape.gradient(loss, conv_outputs)[0]
 
-    # Get the feature map from the last convolutional layer
-    cam = np.ones(output.shape[0:2], dtype=np.float32)
-    for i, w in enumerate(weights):
-        cam += w * output[:, :, i]
+        # Compute the guided gradients
+        positive_grads = tf.cast(grads > 0, 'float32')
+        negative_grads = tf.cast(grads < 0, 'float32')
+        guided_grads = tf.cast(output > 0, 'float32') * positive_grads * grads + tf.cast(output <= 0,
+                                                                                         'float32') * negative_grads * grads
 
-    # Resize the heatmap to match the input image size
-    cam = cv2.resize(cam.numpy(), (image.size[0], image.size[1]))  # use size attribute to get image dimensions
-    cam = np.maximum(cam, 0)
-    heatmap = (cam - cam.min()) / (cam.max() - cam.min())
+        # Compute the weights using global average pooling
+        weights = tf.reduce_mean(guided_grads, axis=(0, 1))
+
+        # Get the feature map from the last convolutional layer
+        cam = np.ones(output.shape[0:2], dtype=np.float32)
+        for i, w in enumerate(weights):
+            cam += w * output[:, :, i]
+
+        # Resize the heatmap to match the input image size
+        cam = cv2.resize(cam.numpy(), (json_data['image_size'], json_data['image_size']))  # use size attribute to get image dimensions
+        cam = np.maximum(cam, 0)
+        heatmap = (cam - cam.min()) / (cam.max() - cam.min())
+        heatmap = np.uint8(255 * heatmap)
+
+        # Apply the heatmap to the original image
+        heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+        superimposed_img = cv2.addWeighted(cv2.cvtColor(np.uint8(image), cv2.COLOR_RGB2BGR), 0.6, heatmap, 0.4, 0)
+
+        # Plot the original image and the heatmap
+
+        ax.add_patch(rect)
+        ax.axis('off')
+        ax.imshow(cv2.cvtColor(np.uint8(superimposed_img), cv2.COLOR_BGR2RGB))
+        plt.show()
+
+    elif  json_data['model_type'] == 'xxxresnet50':
+
+        # Grad-CAM algorithm
+
+        # Find the last convolutional layer
+        last_conv_layer = None
+        for layer in reversed(model.layers):
+            if 'conv' in layer.name:
+                last_conv_layer = layer
+                break
+
+        if last_conv_layer is None:
+            raise ValueError("No convolutional layer found in the model.")
+
+        # Define the output layer
+        output_layer = model.output
+
+        # Calculate the gradients of the output with respect to the last convolutional layer
+        grads = tf.gradients(output_layer, last_conv_layer.output)[0]
+
+        # Calculate the mean value of gradients along each feature map
+        pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+
+        # Create a Keras function to get the values of last convolutional layer and pooled gradients
+        iterate = tf.keras.backend.function([model.input], [last_conv_layer.output, pooled_grads])
+
+        # Define the image for which Grad-CAM needs to be computed
+        input_image = np.random.random((1, json_data['image_size'], json_data['image_size'], 3))  # Replace with your input image
+
+        # Get the values of last convolutional layer and pooled gradients
+        conv_output, grad_values = iterate([input_image])
+
+        # Multiply each feature map in the convolutional output by its corresponding gradient value
+        for i in range(grad_values.shape[-1]):
+            conv_output[:, :, :, i] *= grad_values[i]
+
+        # Calculate the heatmap by averaging the weighted feature maps
+        heatmap = np.mean(conv_output, axis=-1)
+
+        # Normalize the heatmap between 0 and 1
+        heatmap = np.maximum(heatmap, 0)
+        heatmap /= np.max(heatmap)
+
+
+    elif json_data['model_type'] == 'resnet50':
+
+        # Get the predicted class
+        with tf.GradientTape() as tape:
+            conv_outputs, predictions = grad_model(x)
+            print(conv_outputs, predictions[0])
+            loss = predictions[:, np.argmax(predictions[0])]
+
+        # Get the gradients with respect to the last convolutional layer
+        output = conv_outputs[0]
+        grads = tape.gradient(loss, conv_outputs)[0]
+
+        # Compute the guided gradients
+        positive_grads = tf.cast(grads > 0, 'float32')
+        negative_grads = tf.cast(grads < 0, 'float32')
+        guided_grads = tf.cast(output > 0, 'float32') * positive_grads * grads + tf.cast(output <= 0,
+                                                                                         'float32') * negative_grads * grads
+
+        # Compute the weights using global average pooling
+        weights = tf.reduce_mean(guided_grads, axis=(0, 1))
+
+        # Get the feature map from the last convolutional layer
+        cam = np.zeros((output.shape[0], output.shape[1]), dtype=np.float32)
+        #for i, w in enumerate(weights):
+        #    cam += w * output[:, :, i]
+
+        for i, w in enumerate(weights):
+            cam += w * np.array(output[:, :, i])
+
+        # Resize the heatmap to match the input image size
+        cam = cv2.resize(cam.numpy(), (json_data['image_size'], json_data['image_size']))  # use size attribute to get image dimensions
+        cam = np.maximum(cam, 0)
+        heatmap = (cam - cam.min()) / (cam.max() - cam.min())
+        heatmap = np.uint8(255 * heatmap)
+
+        # Apply the heatmap to the original image
+        heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+        superimposed_img = cv2.addWeighted(cv2.cvtColor(np.uint8(image), cv2.COLOR_RGB2BGR), 0.6, heatmap, 0.4, 0)
+
+        # Plot the original image and the heatmap
+
+        ax.add_patch(rect)
+        ax.axis('off')
+        ax.imshow(cv2.cvtColor(np.uint8(superimposed_img), cv2.COLOR_BGR2RGB))
+        plt.show()
+
+    elif json_data['model_type'] == 'vit':
+        image3c = img_transformer(json_data['image_size'], 3, json_data['isolate_nodule_image'])(image, annotation,
+                                                                                                 None, None)
+        # Then, we compute the gradient of the top predicted class for our input image
+        # with respect to the activations of the last conv layer
+        with tf.GradientTape() as tape:
+            last_conv_layer_output, preds = grad_model(x)
+            print(last_conv_layer_output, preds)
+            class_channel = preds[:, tf.argmax(preds[0])]
+
+        print(class_channel)
+        # This is the gradient of the output neuron (top predicted or chosen)
+        # with regard to the output feature map of the last conv layer
+        grads = tape.gradient(class_channel, last_conv_layer_output)
+
+        # This is a vector where each entry is the mean intensity of the gradient
+        # over a specific feature map channel
+        pooled_grads = tf.reduce_mean(grads, axis=(0, 1))
+        # We multiply each channel in the feature map array
+        # by "how important this channel is" with regard to the top predicted class
+        # then sum all the channels to obtain the heatmap class activation
+        last_conv_layer_output = last_conv_layer_output
+        heatmap = last_conv_layer_output @ pooled_grads[..., tf.newaxis]
+        heatmap = tf.squeeze(heatmap)
+
+        # For visualization purpose, we will also normalize the heatmap between 0 & 1
+        heatmap = tf.maximum(heatmap, 0) / tf.math.reduce_max(heatmap)
+        heatmap = heatmap.numpy()
+
+        # cam = cv2.resize(cam.numpy(), (json_data['image_size'], json_data['image_size']))
+        heatmap = np.reshape(heatmap, (16, 16))
+
+        display_gradcam(image3c, heatmap, ax, rect)
+
+        embeddings_model = model.original.get_embeddings_model()
+        embeddings = embeddings_model.predict(tf.expand_dims(image, axis=0))
+
+        # Rescale the embeddings to [0, 1]
+        min_value = np.min(embeddings)
+        max_value = np.max(embeddings)
+        normalized_embeddings = (embeddings - min_value) / (max_value - min_value)
+
+        # Reshape the embeddings to match the desired image size
+        image_size = 32  # Adjust this value to set the size of the displayed images
+        reshaped_embeddings = normalized_embeddings.reshape(-1, image_size, image_size)
+
+        # Display the embeddings as images
+        num_embeddings = reshaped_embeddings.shape[0]
+        num_cols = 8  # Number of columns in the visualization grid
+        num_rows = (num_embeddings - 1) // num_cols + 1
+
+        fig, axs = plt.subplots(num_rows, num_cols, figsize=(12, 12))
+
+        for i in range(num_embeddings):
+            ax = axs[i // num_cols, i % num_cols]
+            ax.imshow(reshaped_embeddings[i], cmap='gray')
+            ax.axis("off")
+
+        plt.tight_layout()
+        plt.show()
+
+
+def display_gradcam(img, heatmap, ax, rect, alpha=0.2):
+    import numpy as np
+    from tensorflow import keras
+    import matplotlib.cm as cm
+
+    # Rescale heatmap to a range 0-255
     heatmap = np.uint8(255 * heatmap)
+    print("Heatmap shape")
+    print(heatmap.shape)
+    print(img.shape)
 
-    # Apply the heatmap to the original image
-    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-    superimposed_img = cv2.addWeighted(cv2.cvtColor(np.uint8(image), cv2.COLOR_RGB2BGR), 0.6, heatmap, 0.4, 0)
+    # Use jet colormap to colorize heatmap
+    jet = cm.get_cmap("jet")
 
-    # Plot the original image and the heatmap
-    plt.imshow(cv2.cvtColor(np.uint8(superimposed_img), cv2.COLOR_BGR2RGB))
+    # Use RGB values of the colormap
+    jet_colors = jet(np.arange(256))[:, :3]
+    jet_heatmap = jet_colors[heatmap]
+
+    # Create an image with RGB colorized heatmap
+    jet_heatmap = keras.preprocessing.image.array_to_img(jet_heatmap)
+    jet_heatmap = jet_heatmap.resize((img.shape[1], img.shape[0]))
+    jet_heatmap = keras.preprocessing.image.img_to_array(jet_heatmap)
+
+    print('Jet Heatmap shape')
+    print(jet_heatmap.shape)
+
+    # Superimpose the heatmap on original image
+    superimposed_img = jet_heatmap * alpha + img
+    superimposed_img = keras.preprocessing.image.array_to_img(superimposed_img)
+
+    # Display Grad CAM
+    ax.imshow(superimposed_img)
+    ax.add_patch(rect)
+    ax.axis('off')
     plt.show()
+
+    return superimposed_img
 
 
 @app.command("predict_detection")

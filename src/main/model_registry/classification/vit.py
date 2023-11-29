@@ -90,6 +90,7 @@ class ModelDefinition(CustomModelDefinition):
             vit_model.build_model()
 
             model = vit_model.model
+            model.original = vit_model
 
             model.compile(
                 loss=loss,
