@@ -12,7 +12,7 @@ export interface Dataset {
 
     deflated: string;
 
-    starting_from: number;
+    starting_from: string;
 }
 
 export interface DatasetList {

@@ -77,10 +77,11 @@ export class ExperimentComponent implements OnInit {
         });
     }
 
-    getDisplayedItems(starting_from: number): number[] {
-        starting_from = !starting_from ? 0 : starting_from;
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage + starting_from;
+    getDisplayedItems(starting_from: string): number[] {
+        let starting_fromNr = !starting_from ? 0 : Number(starting_from);
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage + starting_fromNr;
         const endIndex = startIndex + this.itemsPerPage;
+        console.log(startIndex, endIndex);
         return this.numbersArray.slice(startIndex, endIndex);
     }
 
