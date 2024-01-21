@@ -917,7 +917,7 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
 
 def start_optuna(name, port):
     print(f'Optuna dashboard will start with port {port} for the database {name}')
-    optuna_dashboard.run_server(port=port, storage=f'sqlite:///{name}')
+    optuna_dashboard.run_server(host='0.0.0.0', port=port, storage=f'sqlite:///{name}')
 
 @app.command("dashboard")
 def dashboard(port=8088):
