@@ -746,7 +746,7 @@ def trials():
 
 @app.command("get_trial")
 def get_trial(trial: str):
-    root = "weights/" + trial.replace('$', '\\')
+    root = "weights/" + trial.replace('$', '\\').replace('$', '/')
 
     with open(root + '.json', 'r') as json_fp:
         json_data = json.load(json_fp)
@@ -1079,7 +1079,7 @@ def predict_nodule(trial, ds_type, ds_name, index):
     with open(directory + f'/{ds_name}/annotation-{index}.txt', 'rb') as file:
         annotation = pickle.load(file)
 
-    with open('weights/' + trial.replace('$', '/') + '.json', 'r') as json_fp:
+    with open('weights/' + trial.replace('$', '/').replace('\\', '$') + '.json', 'r') as json_fp:
         json_data = json.load(json_fp)
 
     _, data_transformer, _, metrics = get_data_transformer(json_data['data_transformer_name'])
@@ -1093,7 +1093,7 @@ def predict_nodule(trial, ds_type, ds_name, index):
                        )
 
     model = model_(None)
-    model.load_weights('weights/' + trial.replace('$', '/') + '.h5')
+    model.load_weights('weights/' + trial.replace('$', '/').replace('\\', '$') + '.h5')
     im = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(image, annotation, None, None)
     vectorized_image = np.expand_dims(im, axis=0)
     start = time.time()
@@ -1134,6 +1134,7 @@ def rest_trials():
 def rest_trials_details(trial):
     ret = get_trial(trial)
     response.content_type = 'application/json'
+    print(dumps(ret))
     return dumps(ret)
 
 @route('/rest/datatransformers', method='GET')
