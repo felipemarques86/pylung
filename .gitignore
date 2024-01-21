@@ -8,6 +8,7 @@
 /src/logs/checkpoint
 *.h5
 /data_archived/
+/weights_archived/
 /weights/
 /weights/detection/
 /weights/detection/*.json
