@@ -86,7 +86,7 @@
                     <div class="content">
                         <div class="row">
                             <div class="col-md-12 image-container">
-                                 <div *ngFor="let i of getDisplayedItems(dataset.starting_from)">
+                                 <div *ngFor="let i of getDisplayedItems()">
                                     <img [src]="pylungService.getImageUrl(dataset, i)">
                                      <br/>
                                      <button *ngIf="!!selected_trial" (click)="predict(i)">Predict - Image {{i}}</button>

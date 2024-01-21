@@ -64,6 +64,9 @@ export class PylungService {
     }
 
     getImageUrl(r: Dataset, i: number, data = '', bbox = false, crop = false) {
+      if (!!r.starting_from) {
+          i = i + Number(r.starting_from);
+      }
       if (bbox)
         return `/rest/navigate/${r.type}/${r.name}/image-${i}.png?bbox=True&data=${data}`;
       else if (crop)
