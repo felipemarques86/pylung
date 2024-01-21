@@ -920,6 +920,10 @@ def start_optuna(name, port):
 @app.command("dashboard")
 def dashboard(port=8088):
     run(host='localhost', port=port, debug=True, reloader=True)
+
+@app.command("public_dashboard")
+def dashboard(port=80):
+    run(host='0.0.0.0', port=port, debug=False, reloader=False)
 @route('/')
 def dashboard_index():
     return static_file('index.html', root='./html/dist')
