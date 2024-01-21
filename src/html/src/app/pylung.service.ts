@@ -63,6 +63,13 @@ export class PylungService {
         return this.http.get<number>(url);
     }
 
+    getImageIndex(i: number, r: Dataset) {
+      if (!!r.starting_from) {
+          i = i + Number(r.starting_from);
+      }
+      return i;
+    }
+
     getImageUrl(r: Dataset, i: number, data = '', bbox = false, crop = false, ignore_starting_from = false) {
       if (!!r.starting_from && !ignore_starting_from) {
           i = i + Number(r.starting_from);

@@ -89,7 +89,7 @@
                                  <div *ngFor="let i of getDisplayedItems()">
                                     <img [src]="pylungService.getImageUrl(dataset, i)">
                                      <br/>
-                                     <button *ngIf="!!selected_trial" (click)="predict(i)">Predict - Image {{i}}</button>
+                                     <button *ngIf="!!selected_trial" (click)="predict(i)">Predict - Image {{pylungService.getImageIndex(i, dataset)}}</button>
 
                                  </div>
                             </div>
@@ -123,10 +123,16 @@
                         <div class="row">
                             <div class="col-md-12">
                                 <ul>
-                                    <li>Predicted Result: {{prediction.predicted_int}}</li>
-                                    <li>Predicted Textual Result: {{prediction.textual}}</li>
-                                    <li>Expected Result: {{prediction.transformed_annotation}}</li>
-                                    <li>Expected Textual Result: {{prediction.expected_textual}}</li>
+                                    <li>Predicted: {{prediction.predicted_int}}</li>
+                                    <li [ngStyle]="{color: prediction.expected_textual == prediction.textual ? 'green' : 'red'}">
+                                        Predicted Textual: {{prediction.textual}}
+                                    </li>
+
+                                    <li>Expected: {{prediction.transformed_annotation}}</li>
+                                    <li [ngStyle]="{color: prediction.expected_textual == prediction.textual ? 'green' : 'red'}">
+                                        Expected Textual: {{prediction.expected_textual}}
+                                    </li>
+
                                     <li>Timespent (s): {{prediction.timespent}}</li>
                                     <hr />
                                     <li>Raw Result: {{prediction.predicted}}</li>

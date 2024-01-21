@@ -1027,46 +1027,42 @@ def get_annotation_ds(ds_type, ds_name, index):
     return str(ret)
 
 
-def get_textual(predicted_value, transformer_function_name):
-    functions = {'name': 'binary_non_module', 'label': 'Non-nodule - Binary'},
-    {'name': 'one_hot_two_non_nodule', 'label': 'Non-nodule - One-Hot'},
-    {'name': 'binary_malignancy_3benign', 'label': 'Malignancy 3 is benign - Binary'},
-    {'name': 'one_hot_two_malignancy_3benign', 'label': 'Malignancy 3 is benign - One-hot'},
-    {'name': 'binary_malignancy_cut0_3benign', 'label': 'Malignancy ignore 0 and 3 is benign - Binary'},
-    {'name': 'binary_malignancy_3malignant', 'label': 'Malignancy 3 is malignant - Binary'},
-    {'name': 'one_hot_two_malignancy_3malignant', 'label': 'Malignancy 3 is malignant - One-hot'},
-    {'name': 'binary_malignancy_cut3', 'label': 'Malignancy ignore 3 - Binary'},
-    {'name': 'one_hot_two_malignancy_cut3', 'label': 'Malignancy ignore 3 - One-hot'},
-    {'name': 'binary_malignancy_cut0and3', 'label': 'Malignancy ignore 3 and 0 - Binary'},
-    {'name': 'one_hot_two_malignancy_cut0and3', 'label': 'Malignancy ignore 3 and 0 - One-hot'},
-    {'name': 'one_hot_two_malignancy_cut0_3benign', 'label': 'Malignancy cut 0 and 3 is benign - One-hot'},
-    {'name': 'binary_malignancy_cut0_3malignant', 'label': 'Malignancy ignore 0 and 3 is malignant - Binary'},
-    {'name': 'one_hot_two_malignancy_cut0_3malignant', 'label': 'Malignancy ignore 0 and 3 is malignant - One-hot'},
-    {'name': 'one_hot_six', 'label': '0 to 5 malignancy - One-hot'},
-    {'name': 'one_hot_five', 'label': '0 to 4 malignancy (1 and 2 clustered) - One-hot'},
-    {'name': 'one_hot_five_cut0', 'label': '0 to 5 malignancy (0 is ignored) - One-hot'},
-    {'name': 'one_hot_five_cut3', 'label': '0 to 5 (3 is ignored) - One-hot'},
-    {'name': 'one_hot_four_cut0and3', 'label': '1, 2, 4 and 5 are considered (0 and 3 are ignored) - One-hot'},
-    {'name': 'bbox', 'label': 'Bounding Box'}
+def get_textual(value, transformer_function_name):
+    if value is None or len(value) == 0:
+        return 'Inconclusive'
 
-    if transformer_function_name == 'binary_non_nodule' or \
-            transformer_function_name == 'one_hot_two_non_nodule' or\
-            transformer_function_name == 'binary_malignancy_3benign' or\
-            transformer_function_name == 'one_hot_two_malignancy_3benign' or\
-            transformer_function_name == 'binary_malignancy_cut0_3benign' or\
-            transformer_function_name == 'binary_malignancy_3malignant' or\
-            transformer_function_name == 'one_hot_two_malignancy_3malignant' or\
-            transformer_function_name == 'binary_malignancy_cut3' or\
-            transformer_function_name == 'one_hot_two_malignancy_cut3' or\
-            transformer_function_name == 'binary_malignancy_cut0and3' or\
-            transformer_function_name == 'one_hot_two_malignancy_cut0and3' or\
-            transformer_function_name == 'one_hot_two_malignancy_cut0_3benign' or\
-            transformer_function_name == 'binary_malignancy_cut0_3malignant' or\
-            transformer_function_name == 'one_hot_two_malignancy_cut0_3malignant':
-        if predicted_value[0] > 0.5:
+    if transformer_function_name == 'binary_non_nodule':
+        if value[0] > 0.5:
             return 'Non-nodule'
         else:
             return 'Nodule'
+    elif transformer_function_name == 'binary_malignancy_3benign' or\
+            transformer_function_name == 'binary_malignancy_cut0_3benign' or\
+            transformer_function_name == 'binary_malignancy_3malignant' or\
+            transformer_function_name == 'binary_malignancy_cut3' or\
+            transformer_function_name == 'binary_malignancy_cut0and3' or\
+            transformer_function_name == 'binary_malignancy_cut0_3malignant':
+        if value[0] > 0.5:
+            return 'Benign'
+        else:
+            return 'Malignant'
+    elif transformer_function_name == 'one_hot_two_non_nodule':
+        max_val = max(value)
+        if max_val - value[0] == 0:
+            return 'Non-nodule'
+        else:
+            return 'Nodule'
+    elif transformer_function_name == 'one_hot_two_malignancy_3benign' or\
+            transformer_function_name == 'one_hot_two_malignancy_3malignant' or\
+            transformer_function_name == 'one_hot_two_malignancy_cut3' or\
+            transformer_function_name == 'one_hot_two_malignancy_cut0and3' or\
+            transformer_function_name == 'one_hot_two_malignancy_cut0_3benign' or\
+            transformer_function_name == 'one_hot_two_malignancy_cut0_3malignant':
+        max_val = max(value)
+        if max_val - value[0] == 0:
+            return 'Benign'
+        else:
+            return 'Malignant'
 
     else:
         return '(check annotation)'
@@ -1104,9 +1100,12 @@ def predict_nodule(trial, ds_type, ds_name, index):
     output = model.predict(vectorized_image)
     end = time.time()
 
+    max_value = np.max(output[0])
+    predicted_int = [1 if value == max_value else 0 for value in output[0]]
+
     ret = {
         'predicted': output[0].tolist(),
-        'predicted_int': output[0].round().astype(int).tolist(),
+        'predicted_int': predicted_int,
         'annotation': str(annotation),
         'transformed_annotation': data_transformer(annotation, None, None, None),
         'timespent': end-start,
