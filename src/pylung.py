@@ -918,7 +918,7 @@ def start_optuna(name, port):
     optuna_dashboard.run_server(port=port, storage=f'sqlite:///{name}')
 
 @app.command("dashboard")
-def dashboard(port=80):
+def dashboard(port=8088):
     run(host='localhost', port=port, debug=True, reloader=True)
 @route('/')
 def dashboard_index():
