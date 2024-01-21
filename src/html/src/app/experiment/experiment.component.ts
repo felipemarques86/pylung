@@ -116,7 +116,8 @@ export class ExperimentComponent implements OnInit {
     }
 
     loadTrial(trial_name: string) {
-        trial_name = trial_name.replace('/', '$').replace('\\', '$');
+        trial_name = trial_name.replace(/\//g, '$').replace(/\\/g, '$');
+        console.log(trial_name);
         this.showLoader = true;
         this.pylungService.getTrialDetails(trial_name).subscribe((_trial: Trial) => {
             this.selected_trial = _trial
