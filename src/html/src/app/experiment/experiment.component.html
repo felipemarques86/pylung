@@ -124,7 +124,9 @@
                             <div class="col-md-12">
                                 <ul>
                                     <li>Predicted Result: {{prediction.predicted_int}}</li>
+                                    <li>Predicted Textual Result: {{prediction.textual}}</li>
                                     <li>Expected Result: {{prediction.transformed_annotation}}</li>
+                                    <li>Expected Textual Result: {{prediction.expected_textual}}</li>
                                     <li>Timespent (s): {{prediction.timespent}}</li>
                                     <hr />
                                     <li>Raw Result: {{prediction.predicted}}</li>
@@ -135,12 +137,12 @@
                         <div class="row">
                             <div class="col-md-6" *ngIf="!selected_trial.isolate_nodule_image">
                                 <h5 class="category">Image with a bounding box</h5>
-                                <img [src]="pylungService.getImageUrl(dataset, selected, '', true)"
+                                <img [src]="pylungService.getImageUrl(dataset, selected, '', true, false, true)"
                                      style="width: 100%; height: auto;">
                             </div>
                             <div class="col-md-6">
                                 <h5 class="category">Cropped image</h5>
-                                <img [src]="pylungService.getImageUrl(dataset, selected, '', false, true)"
+                                <img [src]="pylungService.getImageUrl(dataset, selected, '', false, true,true)"
                                      style="width: 100%; height: auto;">
                             </div>
                         </div>

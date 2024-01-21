@@ -28,6 +28,10 @@ export interface Prediction {
     annotation: string;
     transformed_annotation: string;
     timespent: number;
+
+    textual: string;
+
+    expected_textual: string;
 }
 
 export interface Trial {

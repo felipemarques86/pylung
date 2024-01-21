@@ -99,6 +99,10 @@ export class ExperimentComponent implements OnInit {
     }
 
     predict(i: number) {
+        if (!!this.dataset.starting_from) {
+          i = i + Number(this.dataset.starting_from);
+        }
+
         this.selected = i;
         this.showLoader = true;
         this.pylungService.predict(this.trial, this.dataset.type, this.dataset.name, i).subscribe(prediction => {

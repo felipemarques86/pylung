@@ -1027,6 +1027,51 @@ def get_annotation_ds(ds_type, ds_name, index):
     return str(ret)
 
 
+def get_textual(predicted_value, transformer_function_name):
+    functions = {'name': 'binary_non_module', 'label': 'Non-nodule - Binary'},
+    {'name': 'one_hot_two_non_nodule', 'label': 'Non-nodule - One-Hot'},
+    {'name': 'binary_malignancy_3benign', 'label': 'Malignancy 3 is benign - Binary'},
+    {'name': 'one_hot_two_malignancy_3benign', 'label': 'Malignancy 3 is benign - One-hot'},
+    {'name': 'binary_malignancy_cut0_3benign', 'label': 'Malignancy ignore 0 and 3 is benign - Binary'},
+    {'name': 'binary_malignancy_3malignant', 'label': 'Malignancy 3 is malignant - Binary'},
+    {'name': 'one_hot_two_malignancy_3malignant', 'label': 'Malignancy 3 is malignant - One-hot'},
+    {'name': 'binary_malignancy_cut3', 'label': 'Malignancy ignore 3 - Binary'},
+    {'name': 'one_hot_two_malignancy_cut3', 'label': 'Malignancy ignore 3 - One-hot'},
+    {'name': 'binary_malignancy_cut0and3', 'label': 'Malignancy ignore 3 and 0 - Binary'},
+    {'name': 'one_hot_two_malignancy_cut0and3', 'label': 'Malignancy ignore 3 and 0 - One-hot'},
+    {'name': 'one_hot_two_malignancy_cut0_3benign', 'label': 'Malignancy cut 0 and 3 is benign - One-hot'},
+    {'name': 'binary_malignancy_cut0_3malignant', 'label': 'Malignancy ignore 0 and 3 is malignant - Binary'},
+    {'name': 'one_hot_two_malignancy_cut0_3malignant', 'label': 'Malignancy ignore 0 and 3 is malignant - One-hot'},
+    {'name': 'one_hot_six', 'label': '0 to 5 malignancy - One-hot'},
+    {'name': 'one_hot_five', 'label': '0 to 4 malignancy (1 and 2 clustered) - One-hot'},
+    {'name': 'one_hot_five_cut0', 'label': '0 to 5 malignancy (0 is ignored) - One-hot'},
+    {'name': 'one_hot_five_cut3', 'label': '0 to 5 (3 is ignored) - One-hot'},
+    {'name': 'one_hot_four_cut0and3', 'label': '1, 2, 4 and 5 are considered (0 and 3 are ignored) - One-hot'},
+    {'name': 'bbox', 'label': 'Bounding Box'}
+
+    if transformer_function_name == 'binary_non_nodule' or \
+            transformer_function_name == 'one_hot_two_non_nodule' or\
+            transformer_function_name == 'binary_malignancy_3benign' or\
+            transformer_function_name == 'one_hot_two_malignancy_3benign' or\
+            transformer_function_name == 'binary_malignancy_cut0_3benign' or\
+            transformer_function_name == 'binary_malignancy_3malignant' or\
+            transformer_function_name == 'one_hot_two_malignancy_3malignant' or\
+            transformer_function_name == 'binary_malignancy_cut3' or\
+            transformer_function_name == 'one_hot_two_malignancy_cut3' or\
+            transformer_function_name == 'binary_malignancy_cut0and3' or\
+            transformer_function_name == 'one_hot_two_malignancy_cut0and3' or\
+            transformer_function_name == 'one_hot_two_malignancy_cut0_3benign' or\
+            transformer_function_name == 'binary_malignancy_cut0_3malignant' or\
+            transformer_function_name == 'one_hot_two_malignancy_cut0_3malignant':
+        if predicted_value[0] > 0.5:
+            return 'Non-nodule'
+        else:
+            return 'Nodule'
+
+    else:
+        return '(check annotation)'
+
+
 @route('/rest/predict/<trial:path>/<ds_type:path>/<ds_name:path>/<index:path>')
 def predict_nodule(trial, ds_type, ds_name, index):
     image = None
@@ -1064,7 +1109,9 @@ def predict_nodule(trial, ds_type, ds_name, index):
         'predicted_int': output[0].round().astype(int).tolist(),
         'annotation': str(annotation),
         'transformed_annotation': data_transformer(annotation, None, None, None),
-        'timespent': end-start
+        'timespent': end-start,
+        'textual': get_textual(output[0], json_data['data_transformer_name']),
+        'expected_textual': get_textual(data_transformer(annotation, None, None, None), json_data['data_transformer_name'])
     }
 
     response.content_type = 'application/json'
