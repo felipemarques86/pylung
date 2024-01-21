@@ -1093,6 +1093,7 @@ def predict_nodule(trial, ds_type, ds_name, index):
                        )
 
     model = model_(None)
+    print('weights/' + trial.replace('$', os.sep) + '.h5')
     model.load_weights('weights/' + trial.replace('$', os.sep) + '.h5')
     im = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(image, annotation, None, None)
     vectorized_image = np.expand_dims(im, axis=0)
