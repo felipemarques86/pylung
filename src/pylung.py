@@ -42,8 +42,10 @@ colorama_init()
 dashboards = []
 current_studies = []
 CONDA_ENV = os.environ['CONDA_DEFAULT_ENV']
-
+public_dashboard = False
+models_cache = None
 STUDY_RUNNING = False
+
 # check config.ini is in the root folder
 config_file = config.read('config.ini')
 if len(config_file) == 0:
@@ -923,6 +925,7 @@ def dashboard(port=8088):
 
 @app.command("public_dashboard")
 def dashboard(port=80):
+    public_dashboard = True
     run(host='0.0.0.0', port=port, debug=False, reloader=False)
 @route('/')
 def dashboard_index():
@@ -1069,9 +1072,11 @@ def predict_nodule(trial, ds_type, ds_name, index):
 
 @route('/rest/models', method='GET')
 def rest_models():
-    ret = models()
+    if models_cache is None:
+        models_cache = models()
+
     response.content_type = 'application/json'
-    return dumps(ret)
+    return dumps(models_cache)
 
 @route('/rest/trials', method='GET')
 def rest_trials():
@@ -1093,31 +1098,33 @@ def rest_data_transformers():
 
 @route('/rest/models', method='POST')
 def rest_save_model():
-    ret = save_model(request.json)
-    response.content_type = 'application/json'
-    return dumps(ret)
+    if public_dashboard is False:
+        ret = save_model(request.json)
+        response.content_type = 'application/json'
+        return dumps(ret)
+    return None
 
 @route('/rest/studies', method='POST')
 def rest_start_study():
-
-    batch_size = int(request.json['batch_size'])
-    epochs = int(request.json['epochs'])
-    train_size = float(request.json['train_size'])
-    image_size = int(request.json['image_size'])
-    model_type = request.json['model_type']
-    n_trials = int(request.json['n_trials'])
-    data_transformer_name = request.json['data_transformer_name']
-    data_set = request.json['data_set']
-    db_name = request.json['db_name']
-    isolate_nodule_image = bool(request.json['isolate_nodule_image'])
-    if not isolate_nodule_image:
-        isolate_nodule_image = '--no-isolate-nodule-image'
-    else:
-        isolate_nodule_image = ''
-    d = run_study_cmd(batch_size, data_set, data_transformer_name, db_name, epochs, image_size, isolate_nodule_image,
-                  model_type, n_trials, train_size)
-    return {}
-
+    if public_dashboard is False:
+        batch_size = int(request.json['batch_size'])
+        epochs = int(request.json['epochs'])
+        train_size = float(request.json['train_size'])
+        image_size = int(request.json['image_size'])
+        model_type = request.json['model_type']
+        n_trials = int(request.json['n_trials'])
+        data_transformer_name = request.json['data_transformer_name']
+        data_set = request.json['data_set']
+        db_name = request.json['db_name']
+        isolate_nodule_image = bool(request.json['isolate_nodule_image'])
+        if not isolate_nodule_image:
+            isolate_nodule_image = '--no-isolate-nodule-image'
+        else:
+            isolate_nodule_image = ''
+        d = run_study_cmd(batch_size, data_set, data_transformer_name, db_name, epochs, image_size, isolate_nodule_image,
+                      model_type, n_trials, train_size)
+        return {}
+    return None
 
 def run_study_cmd(batch_size, data_set, data_transformer_name, db_name, epochs, image_size, isolate_nodule_image,
                   model_type, n_trials, train_size):
