@@ -7,7 +7,7 @@
 /src/logs/*.*
 /src/logs/checkpoint
 *.h5
-/data/
+/data-archived/
 /weights/
 /weights/detection/
 /weights/detection/*.json

@@ -11,6 +11,8 @@ export interface Dataset {
     count: number;
 
     deflated: string;
+
+    starting_from: number;
 }
 
 export interface DatasetList {

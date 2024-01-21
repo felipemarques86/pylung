@@ -77,8 +77,9 @@ export class ExperimentComponent implements OnInit {
         });
     }
 
-    getDisplayedItems(): number[] {
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    getDisplayedItems(starting_from: number): number[] {
+        starting_from = !starting_from ? 0 : starting_from;
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage + starting_from;
         const endIndex = startIndex + this.itemsPerPage;
         return this.numbersArray.slice(startIndex, endIndex);
     }
