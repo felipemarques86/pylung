@@ -1072,11 +1072,14 @@ def predict_nodule(trial, ds_type, ds_name, index):
 
 @route('/rest/models', method='GET')
 def rest_models():
+    models = None
     if models_cache is None:
-        models_cache = models()
+         models = models()
+    else:
+        models = models_cache
 
     response.content_type = 'application/json'
-    return dumps(models_cache)
+    return dumps(models)
 
 @route('/rest/trials', method='GET')
 def rest_trials():
