@@ -18,6 +18,7 @@
 /logs/*.*
 /misc/
 /models/
+/models_archived/
 /src/runtime/logs/
 /src/runtime/logs/*.*
 *.sqlite3
