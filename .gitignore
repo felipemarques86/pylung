@@ -6,7 +6,6 @@
 *.pkl
 /src/logs/*.*
 /src/logs/checkpoint
-*.h5
 /data_archived/
 /src/weights_archived/
 /weights/
