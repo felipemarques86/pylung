@@ -105,7 +105,9 @@ export class ExperimentComponent implements OnInit {
 
         this.selected = i;
         this.showLoader = true;
-        this.pylungService.predict(this.trial, this.dataset.type, this.dataset.name, i).subscribe(prediction => {
+        let trial_name = this.trial.replace(/\//g, '$').replace(/\\/g, '$');
+        console.log(trial_name);
+        this.pylungService.predict(trial_name, this.dataset.type, this.dataset.name, i).subscribe(prediction => {
             this.prediction = prediction;
             this.showLoader = false;
         }, error => {
