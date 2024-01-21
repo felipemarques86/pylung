@@ -73,11 +73,12 @@ export class StudiesComponent implements OnInit {
   }
 
   openOptuna(name: string) {
+    alert('Starting Optuna. Please wait 5 seconds for the server to start - then a new tab will open');
      this.pylungService.startOptuna(name).subscribe((port: number) => {
         if(port > 0) {
           setTimeout( () => {
-            window.open(`http://localhost:${port}`)
-          }, 2000);
+            window.open(`http://${window.location.hostname}:${port}`)
+          }, 5000);
         } else {
           alert('Error while starting optuna. Check logs');
         }

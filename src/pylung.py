@@ -1203,13 +1203,13 @@ def rest_open_optuna(name):
     global dashboards
     port = -1
     if dashboards.count(name) == 0:
-        port = 9980 + len(dashboards)
+        port = 30 + len(dashboards)
         od = multiprocessing.Process(target=start_optuna, args=(name,port))
         dashboards.append(name)
         od.start()
 
     if port == -1:
-        port = 9980 + dashboards.index(name)
+        port = 30 + dashboards.index(name)
     print(f'Returning port {port} to the client')
     return str(port)
 
