@@ -21,5 +21,6 @@
 /models_archived/
 /src/runtime/logs/
 /src/runtime/logs/*.*
+/src/previous_results
 *.sqlite3
 *.bat
