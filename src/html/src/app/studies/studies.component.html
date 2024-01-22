@@ -1,6 +1,6 @@
 <div class="main-content">
     <div class="container-fluid">
-        <div class="row">
+        <div class="row" [hidden]="!getPylungService().ui.ui.visibility['Studies.Database_List']">
             <div class="col-md-12">
                 <div class="card">
                     <div class="header">
@@ -28,7 +28,7 @@
 
         </div>
 
-        <div class="row">
+        <div class="row" [hidden]="!getPylungService().ui.ui.visibility['Studies.Create_New_Study']">
             <div class="col-md-12">
                 <div class="card">
                     <div class="header">

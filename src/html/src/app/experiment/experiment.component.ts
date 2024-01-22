@@ -130,4 +130,8 @@ export class ExperimentComponent implements OnInit {
             this.pylungService.showNotification('Error loading trial', 'danger', 'top','right');
         });
     }
+
+    getPylungService() {
+        return this.pylungService;
+    }
 }

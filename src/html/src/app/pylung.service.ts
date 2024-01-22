@@ -6,10 +6,36 @@ import {ModelList} from "./classes/model";
 import {DataTransformerList} from "./classes/data-transformer-list";
 
 declare var $:any;
+
+export interface UI {
+    'public': boolean;
+    'ui': {
+        'visibility': {
+            'Models': boolean,
+            'Models.Models_List': boolean,
+            'Models.Incomplete_Models': boolean,
+            'Models.Models_with_errors': boolean,
+            'Models.Register_New_Model': boolean,
+            'Datasets': boolean,
+            'Datasets.Dataset_List': boolean,
+            'Studies': boolean,
+            'Studies.Database_List': boolean,
+            'Studies.Create_New_Study': boolean,
+            'Experiments': boolean,
+            'Experiments.Dataset_List': boolean,
+            'Experiments.Trial_list': boolean,
+            'Experiments.Image_List': boolean,
+            'Experiments.Result_of_Image': boolean
+        }
+    }
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class PylungService {
+    ui: UI;
+    loggedIn: boolean;
 
   constructor(private http: HttpClient) { }
 
@@ -95,5 +121,10 @@ export class PylungService {
     getTrialDetails(trial_name: string) {
       const url = `/rest/trials/${trial_name}`;
       return this.http.get<Trial>(url);
+    }
+
+    getUi() {
+        const url = '/rest/ui';
+        return this.http.get<UI>(url);
     }
 }

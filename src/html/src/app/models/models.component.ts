@@ -41,4 +41,7 @@ export class ModelsComponent implements OnInit {
   }
 
 
+    getPylungService() {
+        return this.pylungService;
+    }
 }

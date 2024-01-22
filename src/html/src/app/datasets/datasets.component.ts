@@ -22,4 +22,7 @@ export class DatasetsComponent implements OnInit {
     });
   }
 
+    getPylungService() {
+        return this.pylungService;
+    }
 }

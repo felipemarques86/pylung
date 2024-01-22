@@ -1,7 +1,7 @@
 <div class="loader" *ngIf="showLoader"><img src="assets/img/loader-preview.svg" alt="loading"></div>
-<div class="main-content" *ngIf="!showLoader">
+<div class="main-content" *ngIf="!showLoader" [hidden]="!getPylungService().ui.ui.visibility.Experiments" >
     <div class="container-fluid">
-        <div class="row" *ngIf="!!datasetList">
+        <div class="row" *ngIf="!!datasetList" [hidden]="!getPylungService().ui.ui.visibility['Experiments.Dataset_List']">
             <div class="col-md-12">
                 <div class="card">
                     <div class="header">
@@ -36,7 +36,7 @@
                 </div>
             </div>
         </div>
-        <div class="row" *ngIf="!!trialList">
+        <div class="row" *ngIf="!!trialList" [hidden]="!getPylungService().ui.ui.visibility['Experiments.Trial_list']">
             <div class="col-md-12">
                 <div class="card">
                     <div class="header">
@@ -76,7 +76,7 @@
             </div>
         </div>
 
-        <div class="row"  *ngIf="!!dataset">
+        <div class="row"  *ngIf="!!dataset" [hidden]="!getPylungService().ui.ui.visibility['Experiments.Image_List']">
             <div class="col-md-12">
                 <div class="card">
                     <div class="header">
@@ -87,9 +87,9 @@
                         <div class="row">
                             <div class="col-md-12 image-container">
                                  <div *ngFor="let i of getDisplayedItems()">
-                                    <img [src]="pylungService.getImageUrl(dataset, i)">
+                                    <img [src]="getPylungService().getImageUrl(dataset, i)">
                                      <br/>
-                                     <button *ngIf="!!selected_trial" (click)="predict(i)">Predict - Image {{pylungService.getImageIndex(i, dataset)}}</button>
+                                     <button *ngIf="!!selected_trial" (click)="predict(i)">Predict - Image {{getPylungService().getImageIndex(i, dataset)}}</button>
 
                                  </div>
                             </div>
@@ -112,7 +112,7 @@
             </div>
         </div>
 
-        <div class="row" *ngIf="!!prediction">
+        <div class="row" *ngIf="!!prediction" [hidden]="!getPylungService().ui.ui.visibility['Experiments.Result_of_Image']">
             <div class="col-md-12">
                 <div class="card">
                     <div class="header">
@@ -143,12 +143,12 @@
                         <div class="row">
                             <div class="col-md-6" *ngIf="!selected_trial.isolate_nodule_image">
                                 <h5 class="category">Image with a bounding box</h5>
-                                <img [src]="pylungService.getImageUrl(dataset, selected, '', true, false, true)"
+                                <img [src]="getPylungService().getImageUrl(dataset, selected, '', true, false, true)"
                                      style="width: 100%; height: auto;">
                             </div>
                             <div class="col-md-6">
                                 <h5 class="category">Cropped image</h5>
-                                <img [src]="pylungService.getImageUrl(dataset, selected, '', false, true,true)"
+                                <img [src]="getPylungService().getImageUrl(dataset, selected, '', false, true,true)"
                                      style="width: 100%; height: auto;">
                             </div>
                         </div>
@@ -156,12 +156,12 @@
                         <div class="row" *ngIf="selected_trial.detection">
                             <div class="col-md-6">
                                 <h5 class="category">Image with a bounding box (Predicted)</h5><br/>
-                                <img [src]="pylungService.getImageUrl(dataset, selected, prediction.predicted.join(','), true)"
+                                <img [src]="getPylungService().getImageUrl(dataset, selected, prediction.predicted.join(','), true)"
                                      style="width: 100%; height: auto;">
                             </div>
                             <div class="col-md-6">
                                 <h5 class="category">Cropped image (Predicted)</h5><br/>
-                                <img [src]="pylungService.getImageUrl(dataset, selected, prediction.predicted.join(','), false, true)"
+                                <img [src]="getPylungService().getImageUrl(dataset, selected, prediction.predicted.join(','), false, true)"
                                      style="width: 100%; height: auto;">
                             </div>
                         </div>

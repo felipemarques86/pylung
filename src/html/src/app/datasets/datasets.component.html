@@ -1,6 +1,6 @@
 <div class="main-content">
     <div class="container-fluid">
-        <div class="row">
+        <div class="row" [hidden]="!getPylungService().ui.ui.visibility['Datasets']">
             <div class="col-md-12">
                 <div class="card">
                     <div class="header">

@@ -62,6 +62,7 @@ def print_config(conf):
     print(table)
     return dict
 
+
 @app.command("shuffle_database")
 def shuffle_database(name: str, _type: str, new_name: str):
     ds_root_folder = config['DATASET'][f'processed_{_type}_location']
@@ -92,8 +93,6 @@ def deflate_ds(name: str, _type: str, new_name: str):
     original_ds_config.read(directory + '/' + name + '/config.ini')
 
     dataset_info_config = configparser.ConfigParser()
-
-
 
     if _type == 'lidc_idri':
         dataset_reader.zip = False
@@ -195,8 +194,10 @@ def datasets(_type: str):
         _list.append(print_config(ds_config))
     return {'directory:': directory, 'datasets': _list}
 
+
 @app.command("navigate_dataset")
-def navigate_dataset(dataset_name: str, _type: str, data_transformer_name=None, image_size: int = -1, isolate_nodule_image: bool = False, channels: int = -1):
+def navigate_dataset(dataset_name: str, _type: str, data_transformer_name=None, image_size: int = -1,
+                     isolate_nodule_image: bool = False, channels: int = -1):
     directory = config['DATASET'][f'processed_{_type}_location']
     dataset_reader = CustomLidcDatasetReader(location=directory + '/' + dataset_name + '/')
     ds_config = configparser.ConfigParser()
@@ -222,6 +223,7 @@ def navigate_dataset(dataset_name: str, _type: str, data_transformer_name=None, 
     dataset_reader.load_custom()
     display_dataset_images(dataset_reader)
 
+
 @app.command("dataset_details")
 # This is a Python function that takes in several parameters related to a dataset and applies various data and image transformations to it. The input parameters are:
 #
@@ -235,7 +237,9 @@ def navigate_dataset(dataset_name: str, _type: str, data_transformer_name=None, 
 # dump_annotations_to_file: a boolean flag indicating whether to dump the annotations to a file
 # The function then reads the configuration information for the dataset and uses it to create a custom dataset reader. It loads and shuffles the data and then applies the requested data and image transformations. Finally, it loads the transformed data and outputs statistics on the dataset before and after the transformations. If dump_annotations_to_file is True, it also saves the annotations to a file.
 
-def dataset_details(dataset_name: str, _type: str, data_transformer_name=None, image_size: int = -1, isolate_nodule_image: bool = False, channels: int = -1, train_size: float = 0.8, dump_annotations_to_file: bool=False):
+def dataset_details(dataset_name: str, _type: str, data_transformer_name=None, image_size: int = -1,
+                    isolate_nodule_image: bool = False, channels: int = -1, train_size: float = 0.8,
+                    dump_annotations_to_file: bool = False):
     directory = config['DATASET'][f'processed_{_type}_location']
     dataset_reader = CustomLidcDatasetReader(location=directory + '/' + dataset_name + '/')
     ds_config = configparser.ConfigParser()
@@ -267,6 +271,7 @@ def dataset_details(dataset_name: str, _type: str, data_transformer_name=None, i
     info('Statistics after data and image transformation')
     dataset_reader.load_custom()
     dataset_reader.statistics(first=train_size, dump_annotations_to_file=dump_annotations_to_file)
+
 
 @app.command("get_image")
 def get_image_data(dataset_name: str, _type: str, index: int = -1):
@@ -302,7 +307,6 @@ def get_heatmap(weight_file_name, dataset_name, _type, index: int):
     import numpy as np
     import cv2
     import matplotlib.pyplot as plt
-
 
     directory = config['DATASET'][f'processed_{_type}_location']
     dataset_reader = CustomLidcDatasetReader(location=directory + '/' + dataset_name + '/')
@@ -345,7 +349,8 @@ def get_heatmap(weight_file_name, dataset_name, _type, index: int):
         last_conv_layer = model.get_layer('resnet50').get_layer('conv5_block3_out')
 
     annotation = dataset_reader.annotations[0]
-    image = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(originalImage, annotation, None, None)
+    image = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(
+        originalImage, annotation, None, None)
     x = np.expand_dims(image, axis=0)
     annotation_transformed = data_transformer(annotation, None, None, None)
     print(annotation_transformed)
@@ -358,14 +363,13 @@ def get_heatmap(weight_file_name, dataset_name, _type, index: int):
         (int((annotation[2] / originalImage.shape[0]) * json_data['image_size']),
          int((annotation[0] / originalImage.shape[0]) * json_data['image_size'])),
         int((annotation[3] / originalImage.shape[0]) * json_data['image_size'] - (
-                    annotation[2] / originalImage.shape[0]) * json_data['image_size']),
+                annotation[2] / originalImage.shape[0]) * json_data['image_size']),
         int((annotation[1] / originalImage.shape[0]) * json_data['image_size'] - (
-                    annotation[0] / originalImage.shape[0]) * json_data['image_size']),
+                annotation[0] / originalImage.shape[0]) * json_data['image_size']),
         facecolor="none",
         edgecolor="black",
         linewidth=2,
     )
-
 
     if json_data['model_type'] == 'vgg16':
 
@@ -394,7 +398,8 @@ def get_heatmap(weight_file_name, dataset_name, _type, index: int):
             cam += w * output[:, :, i]
 
         # Resize the heatmap to match the input image size
-        cam = cv2.resize(cam.numpy(), (json_data['image_size'], json_data['image_size']))  # use size attribute to get image dimensions
+        cam = cv2.resize(cam.numpy(), (
+            json_data['image_size'], json_data['image_size']))  # use size attribute to get image dimensions
         cam = np.maximum(cam, 0)
         heatmap = (cam - cam.min()) / (cam.max() - cam.min())
         heatmap = np.uint8(255 * heatmap)
@@ -410,7 +415,7 @@ def get_heatmap(weight_file_name, dataset_name, _type, index: int):
         ax.imshow(cv2.cvtColor(np.uint8(superimposed_img), cv2.COLOR_BGR2RGB))
         plt.show()
 
-    elif  json_data['model_type'] == 'xxxresnet50':
+    elif json_data['model_type'] == 'xxxresnet50':
 
         # Grad-CAM algorithm
 
@@ -437,7 +442,8 @@ def get_heatmap(weight_file_name, dataset_name, _type, index: int):
         iterate = tf.keras.backend.function([model.input], [last_conv_layer.output, pooled_grads])
 
         # Define the image for which Grad-CAM needs to be computed
-        input_image = np.random.random((1, json_data['image_size'], json_data['image_size'], 3))  # Replace with your input image
+        input_image = np.random.random(
+            (1, json_data['image_size'], json_data['image_size'], 3))  # Replace with your input image
 
         # Get the values of last convolutional layer and pooled gradients
         conv_output, grad_values = iterate([input_image])
@@ -477,14 +483,15 @@ def get_heatmap(weight_file_name, dataset_name, _type, index: int):
 
         # Get the feature map from the last convolutional layer
         cam = np.zeros((output.shape[0], output.shape[1]), dtype=np.float32)
-        #for i, w in enumerate(weights):
+        # for i, w in enumerate(weights):
         #    cam += w * output[:, :, i]
 
         for i, w in enumerate(weights):
             cam += w * np.array(output[:, :, i])
 
         # Resize the heatmap to match the input image size
-        cam = cv2.resize(cam.numpy(), (json_data['image_size'], json_data['image_size']))  # use size attribute to get image dimensions
+        cam = cv2.resize(cam.numpy(), (
+            json_data['image_size'], json_data['image_size']))  # use size attribute to get image dimensions
         cam = np.maximum(cam, 0)
         heatmap = (cam - cam.min()) / (cam.max() - cam.min())
         heatmap = np.uint8(255 * heatmap)
@@ -620,11 +627,13 @@ def predict_detection(dataset_name: str, _type: str, weight_file_name, index: in
         _, data_transformer, _, metrics = get_data_transformer(json_data['data_transformer_name'])
 
         model_ = get_model(model_type=json_data['model_type'], image_size=json_data['image_size'], static_params=True,
-                                       metrics=metrics, code_name=json_data['code_name'], data_transformer_name=json_data['data_transformer_name'],
-                                       params=json_data['learning_params'], return_model_only=True, batch_size=json_data['batch_size'],
-                                       epochs=json_data['epochs'], num_classes=json_data['num_classes'], loss=json_data['loss'],
-                                       data=None
-        )
+                           metrics=metrics, code_name=json_data['code_name'],
+                           data_transformer_name=json_data['data_transformer_name'],
+                           params=json_data['learning_params'], return_model_only=True,
+                           batch_size=json_data['batch_size'],
+                           epochs=json_data['epochs'], num_classes=json_data['num_classes'], loss=json_data['loss'],
+                           data=None
+                           )
 
         model = model_(None)
         model.load_weights(weight_file_name + '.h5')
@@ -634,25 +643,28 @@ def predict_detection(dataset_name: str, _type: str, weight_file_name, index: in
         output_scaled = [int(x * 512) for x in output[0]]
         annotation_transformed = data_transformer(annotations, None, None)
         annotation_scaled = [x * 512 for x in annotation_transformed]
-        #miou = tf.keras.metrics.MeanIoU(num_classes=4)
-        #miou.update_state(annotation_transformed, output_scaled)
-        #miou = miou.result().numpy()
-
+        # miou = tf.keras.metrics.MeanIoU(num_classes=4)
+        # miou.update_state(annotation_transformed, output_scaled)
+        # miou = miou.result().numpy()
 
         display_original_image_bbox(image, annotations, output_scaled,
                                     'Predicted Value scaled = ' + str(output_scaled) + ', \n'
-                                    'Actual Value transformed = ' + str(annotation_transformed) + ', \n'
-                                    'Actual Value scaled = ' + str(annotation_scaled) + ', \n'
-                                    'Predicted Value raw = ' + str(output[0]) + ', \n' +
-                                    #'MeanIoU = ' + str(miou) + ', \n' +
-                                    'IoU BBox = ' + str(bounding_box_intersection_over_union(annotation_transformed, output[0])))
-
+                                                                                       'Actual Value transformed = ' + str(
+                                        annotation_transformed) + ', \n'
+                                                                  'Actual Value scaled = ' + str(
+                                        annotation_scaled) + ', \n'
+                                                             'Predicted Value raw = ' + str(output[0]) + ', \n' +
+                                    # 'MeanIoU = ' + str(miou) + ', \n' +
+                                    'IoU BBox = ' + str(
+                                        bounding_box_intersection_over_union(annotation_transformed, output[0])))
 
         del dataset_reader
         tensorflow.keras.backend.clear_session()
 
+
 @app.command("drill_down")
-def drill_down(batch_size: int, epochs: int, study_file_path: str, train_size: float, data_set: str, load_weights: bool = False, isolate_nodule_image: bool = True):
+def drill_down(batch_size: int, epochs: int, study_file_path: str, train_size: float, data_set: str,
+               load_weights: bool = False, isolate_nodule_image: bool = True):
     json_object = None
     weights_file = None
     with open(study_file_path + '.json', 'r') as json_fp:
@@ -669,7 +681,6 @@ def drill_down(batch_size: int, epochs: int, study_file_path: str, train_size: f
                   train_size=train_size, ds=data_set, isolate_nodule_image=isolate_nodule_image,
                   channels=get_channels(json_object['model_type']))
 
-
     table = PrettyTable(['Parameter', 'Value'])
     table.add_row(['Code Name', code_name])
     table.add_row(['Model Type', json_object['model_type']])
@@ -682,18 +693,17 @@ def drill_down(batch_size: int, epochs: int, study_file_path: str, train_size: f
     table.add_row(['Dataset Name', data_set])
     table.add_row(['Isolate Nodule image', str(isolate_nodule_image)])
     for i in json_object['learning_params']:
-        table.add_row([i,  json_object['learning_params'][i]])
+        table.add_row([i, json_object['learning_params'][i]])
 
     print(table)
 
     objective = get_model(model_type=json_object['model_type'], image_size=json_object['image_size'],
-                                               batch_size=batch_size,num_classes=num_classes, loss=loss, epochs=epochs, data=data,
-                                               metrics=metrics, save_weights=True, code_name=code_name,
-                                               static_params=True, params=json_object['learning_params'],
-                                               data_transformer_name=json_object['data_transformer_name'], weights_file=weights_file)
+                          batch_size=batch_size, num_classes=num_classes, loss=loss, epochs=epochs, data=data,
+                          metrics=metrics, save_weights=True, code_name=code_name,
+                          static_params=True, params=json_object['learning_params'],
+                          data_transformer_name=json_object['data_transformer_name'], weights_file=weights_file)
 
     print(f'Accuracy = {objective(None)}')
-
 
 
 def save_model(obj):
@@ -709,6 +719,7 @@ def save_model(obj):
         error = str(e)
     return {'filename': filename, 'error': error}
 
+
 @app.command("databases")
 def databases():
     directory = os.path.dirname(os.path.realpath(__file__))
@@ -719,6 +730,7 @@ def databases():
             names.append(os.path.splitext(entry)[0])
     print(names)
     return names
+
 
 @app.command("trials")
 def trials():
@@ -746,12 +758,13 @@ def trials():
 
 @app.command("get_trial")
 def get_trial(trial: str):
-    root = "weights/" + trial.replace('$',  os.sep)
+    root = "weights/" + trial.replace('$', os.sep)
 
     with open(root + '.json', 'r') as json_fp:
         json_data = json.load(json_fp)
 
     return json_data
+
 
 # This function, called models(), lists and inspects all the models in a specific directory, with the goal of extracting relevant information from each one of them.
 #
@@ -798,8 +811,7 @@ def models():
 
 @app.command("train")
 def train(batch_size: int, epochs: int, train_size: float, image_size: int, model_type: str,
-          data_transformer_name: str, data_set: str, params: str, save_weights=True, isolate_nodule_image: bool=True):
-
+          data_transformer_name: str, data_set: str, params: str, save_weights=True, isolate_nodule_image: bool = True):
     parsed_url = urlparse('?' + params)
     params_arr_ = parse_qs(parsed_url.query)
     params_arr = []
@@ -830,10 +842,11 @@ def train(batch_size: int, epochs: int, train_size: float, image_size: int, mode
     print(table)
 
     objective = get_model(model_type=model_type, image_size=image_size, batch_size=batch_size,
-                                               num_classes=num_classes, loss=loss, epochs=epochs, data=data,
-                                               metrics=metrics, save_weights=save_weights, code_name=code_name,
-                                               static_params=True, params=params_arr, data_transformer_name=data_transformer_name)
+                          num_classes=num_classes, loss=loss, epochs=epochs, data=data,
+                          metrics=metrics, save_weights=save_weights, code_name=code_name,
+                          static_params=True, params=params_arr, data_transformer_name=data_transformer_name)
     print(f'Accuracy = {objective(None)}')
+
 
 # This function is used to conduct a hyperparameter optimization study for a machine learning model. It takes in several arguments such as batch size, epochs, train size, image size, model type, number of trials, and others.
 #
@@ -846,8 +859,8 @@ def train(batch_size: int, epochs: int, train_size: float, image_size: int, mode
 # Finally, the function calls the Optuna study's optimize method to run the study and find the best hyperparameters. It prints out the number of finished trials and sets the STUDY_RUNNING variable to false.
 @app.command("study")
 def study(batch_size: int, epochs: int, train_size: float, image_size: int, model_type: str, n_trials: int,
-          data_transformer_name: str, data_set: str, db_name: str, centroid_only: bool = False, isolate_nodule_image: bool = True, detection: bool = False):
-
+          data_transformer_name: str, data_set: str, db_name: str, centroid_only: bool = False,
+          isolate_nodule_image: bool = True, detection: bool = False):
     STUDY_RUNNING = True
     study_counter = config['STUDY']['study_counter']
     config['STUDY']['study_counter'] = str(int(config['STUDY']['study_counter']) + 1)
@@ -860,7 +873,7 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
 
         directions = ["maximize", "minimize", "maximize"]
 
-    code_name = str(get_experiment_codename(int(study_counter)+1))
+    code_name = str(get_experiment_codename(int(study_counter) + 1))
     optuna_study = optuna.create_study(storage=f'sqlite:///{db_name}.sqlite3', directions=directions,
                                        study_name=f'{code_name}',
                                        sampler=TPESampler(),
@@ -898,17 +911,18 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
     num_classes, data_transformer, loss, metrics = get_data_transformer(data_transformer_name, detection)
 
     info(f'Loading dataset...')
-    data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size, ds=data_set, centroid_only=centroid_only, isolate_nodule_image=isolate_nodule_image, channels=get_channels(model_type))
+    data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size,
+                  ds=data_set, centroid_only=centroid_only, isolate_nodule_image=isolate_nodule_image,
+                  channels=get_channels(model_type))
     info(f'Dataset loaded with {len(data[0])} images for training and {len(data[1])} images for validation.')
 
-
-
     objective = get_model(model_type=model_type, image_size=image_size, batch_size=batch_size,
-                                               num_classes=num_classes, loss=loss, epochs=epochs, data=data,
-                                               metrics=metrics, save_weights=True, code_name=code_name, isolate_nodule_image=isolate_nodule_image,
-                                               data_transformer_name=data_transformer_name, detection=detection)
+                          num_classes=num_classes, loss=loss, epochs=epochs, data=data,
+                          metrics=metrics, save_weights=True, code_name=code_name,
+                          isolate_nodule_image=isolate_nodule_image,
+                          data_transformer_name=data_transformer_name, detection=detection)
 
-    optuna_study.optimize(objective, n_trials=n_trials) #, timeout=600)
+    optuna_study.optimize(objective, n_trials=n_trials)  # , timeout=600)
 
     print("Number of finished trials: {}".format(len(optuna_study.trials)))
 
@@ -919,27 +933,35 @@ def start_optuna(name, port):
     print(f'Optuna dashboard will start with port {port} for the database {name}')
     optuna_dashboard.run_server(host='0.0.0.0', port=port, storage=f'sqlite:///{name}')
 
+
 @app.command("dashboard")
 def dashboard(port=8088):
     run(host='localhost', port=port, debug=True, reloader=True)
 
+
 @app.command("public_dashboard")
 def dashboard(port=80):
+    global public_dashboard
     public_dashboard = True
     run(host='0.0.0.0', port=port, debug=False, reloader=False)
+
+
 @route('/')
 def dashboard_index():
     return static_file('index.html', root='./html/dist')
 
+
 @route('/static/<model_name:path>')
 def static(model_name):
     return static_file(model_name, root='./static')
+
 
 @route('/rest/datasets/<ds_type:path>')
 def rest_datasets(ds_type):
     ret = datasets(ds_type)
     response.content_type = 'application/json'
     return dumps(ret)
+
 
 @route('/rest/navigate/<ds_type:path>/<ds_name:path>/image-<index:path>.png')
 def get_image_ds(ds_type, ds_name, index):
@@ -982,14 +1004,16 @@ def get_image_ds(ds_type, ds_name, index):
     fig, ax = plt.subplots(figsize=(5.12, 5.12))
     ax.axis('off')
 
-    if not bbox and data is None and crop and (annotations[0] != 0 or annotations[1] != 0 or annotations[2] !=0 or annotations[3] != 0):
-        ax.imshow(ret[int(annotations[0]):int(annotations[1]), int(annotations[2]):int(annotations[3])], cmap=plt.cm.gray)
+    if not bbox and data is None and crop and (
+            annotations[0] != 0 or annotations[1] != 0 or annotations[2] != 0 or annotations[3] != 0):
+        ax.imshow(ret[int(annotations[0]):int(annotations[1]), int(annotations[2]):int(annotations[3])],
+                  cmap=plt.cm.gray)
     elif data is not None and crop:
         print(f'ret[{int(data[0] * 512)}:{int(data[1] * 512)}, {int(data[2] * 512)}:{int(data[3] * 512)}]')
         ax.imshow(ret[int(data[0] * 512):int(data[1] * 512), int(data[2] * 512):int(data[3] * 512)], cmap=plt.cm.gray)
     else:
         ax.imshow(ret, cmap=plt.cm.gray)
-    if not crop and bbox and (annotations[0] != 0 or annotations[1] != 0 or annotations[2] !=0 or annotations[3] != 0):
+    if not crop and bbox and (annotations[0] != 0 or annotations[1] != 0 or annotations[2] != 0 or annotations[3] != 0):
         rect = patches.Rectangle(
             (int(annotations[2]), int(annotations[0])),
             int(annotations[3] - annotations[2]),
@@ -1017,6 +1041,7 @@ def get_image_ds(ds_type, ds_name, index):
     response.content_type = 'image/x-png'
     return buf.getvalue()
 
+
 @route('/rest/navigate/<ds_type:path>/<ds_name:path>/annotation-<index:path>.txt')
 def get_annotation_ds(ds_type, ds_name, index):
     ret = ''
@@ -1036,11 +1061,11 @@ def get_textual(value, transformer_function_name):
             return 'Non-nodule'
         else:
             return 'Nodule'
-    elif transformer_function_name == 'binary_malignancy_3benign' or\
-            transformer_function_name == 'binary_malignancy_cut0_3benign' or\
-            transformer_function_name == 'binary_malignancy_3malignant' or\
-            transformer_function_name == 'binary_malignancy_cut3' or\
-            transformer_function_name == 'binary_malignancy_cut0and3' or\
+    elif transformer_function_name == 'binary_malignancy_3benign' or \
+            transformer_function_name == 'binary_malignancy_cut0_3benign' or \
+            transformer_function_name == 'binary_malignancy_3malignant' or \
+            transformer_function_name == 'binary_malignancy_cut3' or \
+            transformer_function_name == 'binary_malignancy_cut0and3' or \
             transformer_function_name == 'binary_malignancy_cut0_3malignant':
         if value[0] > 0.5:
             return 'Benign'
@@ -1052,11 +1077,11 @@ def get_textual(value, transformer_function_name):
             return 'Non-nodule'
         else:
             return 'Nodule'
-    elif transformer_function_name == 'one_hot_two_malignancy_3benign' or\
-            transformer_function_name == 'one_hot_two_malignancy_3malignant' or\
-            transformer_function_name == 'one_hot_two_malignancy_cut3' or\
-            transformer_function_name == 'one_hot_two_malignancy_cut0and3' or\
-            transformer_function_name == 'one_hot_two_malignancy_cut0_3benign' or\
+    elif transformer_function_name == 'one_hot_two_malignancy_3benign' or \
+            transformer_function_name == 'one_hot_two_malignancy_3malignant' or \
+            transformer_function_name == 'one_hot_two_malignancy_cut3' or \
+            transformer_function_name == 'one_hot_two_malignancy_cut0and3' or \
+            transformer_function_name == 'one_hot_two_malignancy_cut0_3benign' or \
             transformer_function_name == 'one_hot_two_malignancy_cut0_3malignant':
         max_val = max(value)
         if max_val - value[0] == 0:
@@ -1089,13 +1114,17 @@ def predict_nodule(trial, ds_type, ds_name, index):
                        data_transformer_name=json_data['data_transformer_name'],
                        params=json_data['learning_params'], return_model_only=True, batch_size=json_data['batch_size'],
                        epochs=json_data['epochs'], num_classes=json_data['num_classes'], loss=json_data['loss'],
-                       data=None,detection=json_data['detection'], isolate_nodule_image=json_data['isolate_nodule_image']
+                       data=None, detection=json_data['detection'],
+                       isolate_nodule_image=json_data['isolate_nodule_image']
                        )
 
     model = model_(None)
     print('weights/' + trial.replace('$', os.sep) + '.h5')
     model.load_weights('weights/' + trial.replace('$', os.sep) + '.h5')
-    im = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(image, annotation, None, None)
+    im = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(image,
+                                                                                                                  annotation,
+                                                                                                                  None,
+                                                                                                                  None)
     vectorized_image = np.expand_dims(im, axis=0)
     start = time.time()
     output = model.predict(vectorized_image)
@@ -1109,27 +1138,31 @@ def predict_nodule(trial, ds_type, ds_name, index):
         'predicted_int': predicted_int,
         'annotation': str(annotation),
         'transformed_annotation': data_transformer(annotation, None, None, None),
-        'timespent': end-start,
+        'timespent': end - start,
         'textual': get_textual(output[0], json_data['data_transformer_name']),
-        'expected_textual': get_textual(data_transformer(annotation, None, None, None), json_data['data_transformer_name'])
+        'expected_textual': get_textual(data_transformer(annotation, None, None, None),
+                                        json_data['data_transformer_name'])
     }
 
     response.content_type = 'application/json'
     return dumps(ret)
 
+
 @route('/rest/models', method='GET')
 def rest_models():
     global models_cache
     if models_cache is None:
-         models_cache = models()
+        models_cache = models()
     response.content_type = 'application/json'
     return dumps(models_cache)
+
 
 @route('/rest/trials', method='GET')
 def rest_trials():
     ret = trials()
     response.content_type = 'application/json'
     return dumps(ret)
+
 
 @route('/rest/trials/<trial:path>', method='GET')
 def rest_trials_details(trial):
@@ -1138,22 +1171,84 @@ def rest_trials_details(trial):
     print(dumps(ret))
     return dumps(ret)
 
+
 @route('/rest/datatransformers', method='GET')
 def rest_data_transformers():
     ret = get_list_database_transformers()
     response.content_type = 'application/json'
     return dumps({'list': ret})
 
+
+@route('/rest/ui', method='GET')
+def rest_ui():
+    global public_dashboard
+    if public_dashboard is True:
+        return dumps(
+            {'public': True,
+             'ui':
+                 {'visibility':
+
+                     {
+                         'Models': True,
+                         'Models.Models_List': True,
+                         'Models.Incomplete_Models': False,
+                         'Models.Models_with_errors': False,
+                         'Models.Register_New_Model': False,
+                         'Datasets': True,
+                         'Datasets.Dataset_List': True,
+                         'Studies': True,
+                         'Studies.Database_List': True,
+                         'Studies.Create_New_Study': False,
+                         'Experiments': True,
+                         'Experiments.Dataset_List': True,
+                         'Experiments.Trial_list': True,
+                         'Experiments.Image_List': True,
+                         'Experiments.Result_of_Image': True
+                     }
+                 }
+             }
+        )
+    else:
+        return dumps(
+            {'public': False,
+             'ui':
+                 {'visibility':
+
+                     {
+                         'Models': True,
+                         'Models.Models_List': True,
+                         'Models.Incomplete_Models': True,
+                         'Models.Models_with_errors': True,
+                         'Models.Register_New_Model': True,
+                         'Datasets': True,
+                         'Datasets.Dataset_List': True,
+                         'Studies': True,
+                         'Studies.Database_List': True,
+                         'Studies.Create_New_Study': True,
+                         'Experiments': True,
+                         'Experiments.Dataset_List': True,
+                         'Experiments.Trial_list': True,
+                         'Experiments.Image_List': True,
+                         'Experiments.Result_of_Image': True
+                     }
+                 }
+             }
+        )
+
+
 @route('/rest/models', method='POST')
 def rest_save_model():
+    global public_dashboard
     if public_dashboard is False:
         ret = save_model(request.json)
         response.content_type = 'application/json'
         return dumps(ret)
     return None
 
+
 @route('/rest/studies', method='POST')
 def rest_start_study():
+    global public_dashboard
     if public_dashboard is False:
         batch_size = int(request.json['batch_size'])
         epochs = int(request.json['epochs'])
@@ -1169,10 +1264,12 @@ def rest_start_study():
             isolate_nodule_image = '--no-isolate-nodule-image'
         else:
             isolate_nodule_image = ''
-        d = run_study_cmd(batch_size, data_set, data_transformer_name, db_name, epochs, image_size, isolate_nodule_image,
-                      model_type, n_trials, train_size)
+        d = run_study_cmd(batch_size, data_set, data_transformer_name, db_name, epochs, image_size,
+                          isolate_nodule_image,
+                          model_type, n_trials, train_size)
         return {}
     return None
+
 
 def run_study_cmd(batch_size, data_set, data_transformer_name, db_name, epochs, image_size, isolate_nodule_image,
                   model_type, n_trials, train_size):
@@ -1198,13 +1295,14 @@ def rest_databases():
     response.content_type = 'application/json'
     return dumps(ret)
 
+
 @route('/rest/optuna/start/<name:path>')
 def rest_open_optuna(name):
     global dashboards
     port = -1
     if dashboards.count(name) == 0:
         port = 8000 + len(dashboards)
-        od = multiprocessing.Process(target=start_optuna, args=(name,port))
+        od = multiprocessing.Process(target=start_optuna, args=(name, port))
         dashboards.append(name)
         od.start()
 
@@ -1213,9 +1311,11 @@ def rest_open_optuna(name):
     print(f'Returning port {port} to the client')
     return str(port)
 
+
 @route('/<filename:path>')
 def dashboard_resources(filename):
     return static_file(filename, root='./html/dist')
+
 
 if __name__ == "__main__":
     app()

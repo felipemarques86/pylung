@@ -1,6 +1,6 @@
 <div class="main-content">
     <div class="container-fluid">
-        <div class="row">
+        <div class="row" [hidden]="!getPylungService().ui.ui.visibility['Models.Models_List']">
             <div class="col-md-12">
                 <div class="card">
                     <div class="header">
@@ -46,7 +46,7 @@
 
         </div>
 
-        <div class="row" *ngIf="modelsList.details_list.length > 0">
+        <div class="row" *ngIf="modelsList.details_list.length > 0" [hidden]="!getPylungService().ui.ui.visibility['Models.Incomplete_Models']">
             <div class="col-md-12">
                 <div class="card">
                     <div class="header">
@@ -83,7 +83,7 @@
 
         </div>
 
-        <div class="row" *ngIf="modelsList.details_list.length > 0">
+        <div class="row" *ngIf="modelsList.details_list.length > 0" [hidden]="!getPylungService().ui.ui.visibility['Models.Models_with_errors']">
             <div class="col-md-12">
                 <div class="card">
                     <div class="header">
@@ -123,7 +123,7 @@
 
         </div>
 
-        <div class="row">
+        <div class="row" [hidden]="!getPylungService().ui.ui.visibility['Models.Register_New_Model']">
             <div class="col-md-12">
                 <div class="card">
                     <div class="header">

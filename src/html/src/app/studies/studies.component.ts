@@ -85,4 +85,8 @@ export class StudiesComponent implements OnInit {
 
      });
   }
+
+    getPylungService() {
+        return this.pylungService;
+    }
 }
