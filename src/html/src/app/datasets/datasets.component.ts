@@ -12,13 +12,14 @@ export class DatasetsComponent implements OnInit {
 
 
   datasetList: DatasetList = {directory: '', datasets: []};
+  showLoader: boolean = false;
   constructor(private pylungService: PylungService) { }
 
   ngOnInit(): void {
+    this.showLoader = true;
     this.pylungService.getDatasets().subscribe((datasetList: DatasetList) => {
-      console.log(datasetList);
       this.datasetList = datasetList;
-
+      this.showLoader = false;
     });
   }
 

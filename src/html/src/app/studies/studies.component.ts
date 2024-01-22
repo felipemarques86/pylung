@@ -26,10 +26,12 @@ export class StudiesComponent implements OnInit {
   models: ModelList;
   datasets: DatasetList;
   transformers: DataTransformerList;
+  showLoader = false;
 
   constructor(private pylungService: PylungService) { }
 
   ngOnInit(): void {
+    this.showLoader = true;
     this.batch_size = 32;
     this.epochs = 10;
     this.trainSize = 0.8;
@@ -48,9 +50,11 @@ export class StudiesComponent implements OnInit {
           this.models = value[1];
           this.datasets = value[2];
           this.transformers = value[3];
+          this.showLoader = false;
         }
     );
-  }W
+  }
+
 
   startStudy() {
     const params = {

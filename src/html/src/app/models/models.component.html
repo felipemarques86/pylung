@@ -1,4 +1,5 @@
-<div class="main-content">
+<div class="loader" *ngIf="showLoader"><img src="assets/img/loader-preview.svg" alt="loading"></div>
+<div class="main-content" *ngIf="!showLoader">
     <div class="container-fluid">
         <div class="row" [hidden]="!getPylungService().ui.ui.visibility['Models.Models_List']">
             <div class="col-md-12">

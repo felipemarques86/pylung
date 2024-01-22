@@ -13,14 +13,15 @@ export class ModelsComponent implements OnInit {
   modelsList: ModelList = {details_list: [], incomplete_models_list: [], error_list: []};
   name: any;
   code: any;
+  showLoader: boolean = false;
   constructor(private pylungService: PylungService) { }
 
   ngOnInit(): void {
-    this.pylungService.getModels().subscribe((modelList: ModelList) => {
-      console.log(modelList);
-      this.modelsList = modelList;
-
-    });
+      this.showLoader = true;
+      this.pylungService.getModels().subscribe((modelList: ModelList) => {
+        this.modelsList = modelList;
+        this.showLoader = false;
+      });
   }
 
   saveModel() {
