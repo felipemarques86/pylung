@@ -1,0 +1,7 @@
+{
+  "/rest": {
+    "target": "http://pylungui.pt",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
