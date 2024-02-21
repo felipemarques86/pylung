@@ -34,7 +34,7 @@ from main.experiment.experiment_utilities import get_ds, get_model, load_module
 from main.models.ml_model import CustomModelDefinition
 from main.utilities.utilities_lib import warning, error, info, get_data_transformer, display_original_image_bbox, \
     get_experiment_codename, get_channels, img_transformer, LIDC_ANN_Y0, LIDC_ANN_Y1, LIDC_ANN_X0, LIDC_ANN_X1, \
-    get_list_database_transformers, bounding_box_intersection_over_union
+    get_list_database_transformers, bounding_box_intersection_over_union, get_data_transformer_function
 
 config = configparser.ConfigParser()
 app = typer.Typer()
@@ -302,7 +302,7 @@ def find_target_layer(model):
 
 
 @app.command("heatmap")
-def get_heatmap(weight_file_name, dataset_name, _type, index: int):
+def get_heatmap2(weight_file_name, dataset_name, _type, index: int):
     import tensorflow as tf
     import numpy as np
     import cv2
@@ -606,6 +606,8 @@ def display_gradcam(img, heatmap, ax, rect, alpha=0.2):
     plt.show()
 
     return superimposed_img
+
+
 
 
 @app.command("predict_detection")
@@ -1095,36 +1097,38 @@ def get_textual(value, transformer_function_name):
 
 @route('/rest/predict/<trial:path>/<ds_type:path>/<ds_name:path>/<index:path>')
 def predict_nodule(trial, ds_type, ds_name, index):
-    image = None
-    annotation = None
-
     directory = config['DATASET'][f'processed_{ds_type}_location']
-    with open(directory + f'/{ds_name}/image-{index}.raw', 'rb') as file:
-        image = pickle.load(file)
-    with open(directory + f'/{ds_name}/annotation-{index}.txt', 'rb') as file:
-        annotation = pickle.load(file)
 
-    with open('weights/' + trial.replace('$', os.sep) + '.json', 'r') as json_fp:
+    # Utilize a function to load data to potentially reduce memory usage
+    def load_data(file_path):
+        with open(file_path, 'rb') as file:
+            return pickle.load(file)
+
+    image_path = os.path.join(directory, ds_name, f'image-{index}.raw')
+    annotation_path = os.path.join(directory, ds_name, f'annotation-{index}.txt')
+    image = load_data(image_path)
+    annotation = load_data(annotation_path)
+
+    trial_path = 'weights/' + trial.replace('$', os.sep) + '.json'
+    with open(trial_path, 'r') as json_fp:
         json_data = json.load(json_fp)
 
-    _, data_transformer, _, metrics = get_data_transformer(json_data['data_transformer_name'])
+    data_transformer = get_data_transformer_function(json_data['data_transformer_name'])
 
-    model_ = get_model(model_type=json_data['model_type'], image_size=json_data['image_size'], static_params=True,
-                       metrics=metrics, code_name=json_data['code_name'],
-                       data_transformer_name=json_data['data_transformer_name'],
-                       params=json_data['learning_params'], return_model_only=True, batch_size=json_data['batch_size'],
-                       epochs=json_data['epochs'], num_classes=json_data['num_classes'], loss=json_data['loss'],
-                       data=None, detection=json_data['detection'],
-                       isolate_nodule_image=json_data['isolate_nodule_image']
-                       )
+    # Load model weights only once if possible or use a caching mechanism
+    m_model = get_model(model_type=json_data['model_type'], image_size=json_data['image_size'], static_params=True,
+                      metrics=[], code_name=json_data['code_name'],
+                      data_transformer_name=json_data['data_transformer_name'],
+                      params=json_data['learning_params'], return_model_only=True, batch_size=json_data['batch_size'],
+                      epochs=json_data['epochs'], num_classes=json_data['num_classes'], loss=json_data['loss'],
+                      data=None, detection=json_data['detection'],
+                      isolate_nodule_image=json_data['isolate_nodule_image']
+                      )
 
-    model = model_(None)
-    print('weights/' + trial.replace('$', os.sep) + '.h5')
+    model = m_model(None)
+
     model.load_weights('weights/' + trial.replace('$', os.sep) + '.h5')
-    im = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(image,
-                                                                                                                  annotation,
-                                                                                                                  None,
-                                                                                                                  None)
+    im = img_transformer(json_data['image_size'], json_data['image_channels'], json_data['isolate_nodule_image'])(image, annotation, None, None)
     vectorized_image = np.expand_dims(im, axis=0)
     start = time.time()
     output = model.predict(vectorized_image)
@@ -1133,6 +1137,7 @@ def predict_nodule(trial, ds_type, ds_name, index):
     max_value = np.max(output[0])
     predicted_int = [1 if value == max_value else 0 for value in output[0]]
 
+    # Construct response
     ret = {
         'predicted': output[0].tolist(),
         'predicted_int': predicted_int,
@@ -1145,8 +1150,8 @@ def predict_nodule(trial, ds_type, ds_name, index):
     }
 
     response.content_type = 'application/json'
-    return dumps(ret)
-
+    out = dumps(ret)
+    return out
 
 @route('/rest/models', method='GET')
 def rest_models():

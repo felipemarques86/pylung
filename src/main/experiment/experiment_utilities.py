@@ -93,6 +93,11 @@ def get_model(model_type, image_size, batch_size, epochs, num_classes, loss, dat
                           data_transformer_name=data_transformer_name, return_model_only=return_model_only,
                           weights_file=weights_file, detection=detection, isolate_nodule_image=isolate_nodule_image)
 
+def get_model_definition(model_type):
+    m = load_module(model_type)
+    modelDef: CustomModelDefinition = m.ModelDefinition()
+    return modelDef
+
 
 # deprecated
 def build_classification_objective(model_type, image_size, batch_size, epochs, num_classes, loss, data, metrics,

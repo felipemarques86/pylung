@@ -3,6 +3,9 @@ from optuna.integration import KerasPruningCallback
 from main.models.ml_model import CustomModelDefinition
 from main.models.vit_model import VitModel
 
+import numpy as np
+import tensorflow as tf
+from matplotlib import pyplot as plt
 
 class ModelDefinition(CustomModelDefinition):
 

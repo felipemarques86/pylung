@@ -38,7 +38,7 @@ class ModelDefinition(CustomModelDefinition):
         model_type = 'resnet50'
         def objective(trial):
             # Clear clutter from previous Keras session graphs.
-            self.clear_session()
+            # self.clear_session()
 
             if static_params is False:
                 learning_rate = trial.suggest_float("Learning Rate", 1e-10, 1e-1, log=True)
@@ -71,14 +71,14 @@ class ModelDefinition(CustomModelDefinition):
 
             model: Model = model_.model
 
+            if return_model_only:
+                return model
+
             model.compile(
                 loss=loss,
                 optimizer=self.get_optimizer(optimizer, learning_rate=learning_rate, weight_decay=weight, momentum=momentum),
                 metrics=metrics,
             )
-
-            if return_model_only:
-                return model
 
             x_train, x_valid, y_train, y_valid = data
 

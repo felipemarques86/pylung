@@ -63,10 +63,15 @@ def bounding_box_intersection_over_union(box_predicted, box_truth):
         box_predicted_area + box_truth_area - intersection_area
     )
 
+
+def get_data_transformer_function(data_transformer_name):
+    data_transformer = globals()[data_transformer_name]
+    return data_transformer
 def get_data_transformer(data_transformer_name, detection=False):
     metrics = []
     data_transformer = globals()[data_transformer_name]
     loss = 'categorical_crossentropy'
+    num_classes = 1
     if data_transformer_name.startswith('binary_'):
         num_classes = 1
         loss = 'binary_crossentropy'
