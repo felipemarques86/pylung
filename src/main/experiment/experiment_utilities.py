@@ -15,43 +15,66 @@ from main.utilities.utilities_lib import img_transformer, get_optimizer, LIDC_AN
     LIDC_ANN_X1, LIDC_CENTROID_FLAG
 
 
-def get_ds(config, isolate_nodule_image, train_size, image_size, channels, centroid_only, data_transformer, ds):
+def get_ds(config, ds, fold):
     ds_root_folder = config['DATASET'][f'processed_lidc_idri_location']
-    dataset_reader = CustomLidcDatasetReader(location=ds_root_folder + f'/{ds}/')
-    #if isolate_nodule_image:
-    #    dataset_reader.filter_out(lambda data: data[LIDC_ANN_Y0] == 0 and data[LIDC_ANN_Y1] == 0 and
-    #                                           data[LIDC_ANN_X0] == 0 and data[LIDC_ANN_X1] == 0)
 
-    if centroid_only:
-        dataset_reader.filter_out(lambda data: not data[LIDC_CENTROID_FLAG])
+    x_train = None
+    y_train = None
+    x_valid = None
+    y_valid = None
 
-    dataset_reader.dataset_data_transformers.append(DatasetTransformer(function=data_transformer))
-    dataset_reader.dataset_image_transformers.append(
-        DatasetTransformer(function=img_transformer(image_size, channels, isolate_nodule_image)))
-    dataset_reader.load_custom(image_size=image_size)
+    if fold > 0:
+        print(f'Loading {ds}{fold}')
+        ds_reader_val = CustomLidcDatasetReader(ds_root_folder + f'/{ds}{fold}/')
+        ds_reader_val.load_simple()
 
-    x = dataset_reader.images
-    y = dataset_reader.annotations
+        x_valid = ds_reader_val.images
+        y_valid = np.array(ds_reader_val.annotations)
 
-    if len(x) != len(y):
-        raise f"Total images does not match with total annotations {len(x)} != {len(y)}"
+        if len(x_valid) != len(y_valid):
+            raise Exception('x_valid and y_valid have different lengths')
 
-    (x_train), (y_train) = (
-        x[: int(len(x) * train_size)],
-        y[: int(len(y) * train_size)],
-    )
-    (x_valid), (y_valid) = (
-        np.asarray(x[int(len(x) * train_size):]),
-        np.asarray(y[int(len(y) * train_size):]),
-    )
-    dataset_reader.images = x_train
-    dataset_reader.annotations = y_train
-    dataset_reader.augment(0.2, 0.3)
+        print(f'{ds}{fold} loaded')
 
-    (x_train), (y_train) = (
-        np.asarray(dataset_reader.images),
-        np.asarray(dataset_reader.annotations),
-    )
+        for i in range(1, 5):
+            if i != fold:
+                print(f'Loading {ds}{i}')
+                ds_reader_train = CustomLidcDatasetReader(ds_root_folder + f'/{ds}{i}/')
+                ds_reader_train.load_simple()
+                if x_train is None:
+                    x_train = ds_reader_train.images
+                    y_train = ds_reader_train.annotations
+                else:
+                    x_train = np.append(x_train, ds_reader_train.images)
+                    y_train = np.append(y_train, ds_reader_train.annotations)
+                if len(x_train) != len(y_train):
+                    raise Exception('x_train and y_train have different lengths')
+
+                print(f'{ds}{i} loaded')
+
+    if type(y_train) != type(y_valid):
+        raise Exception('y_train and y_valid have different types. y_train type is ' + str(type(y_train)) + ' and y_valid type is ' + str(type(y_valid)))
+
+
+    else:
+        for i in range(1, 5):
+            ds_reader_train = CustomLidcDatasetReader(ds_root_folder + f'/{ds}{i}/')
+            ds_reader_train.load_simple()
+            if x_train is None:
+                x_train = ds_reader_train.images
+                y_train = ds_reader_train.annotations
+            else:
+                x_train = np.concatenate((x_train, ds_reader_train.images))
+                y_train = np.concatenate((y_train, ds_reader_train.annotations))
+
+
+    print(f'x_train: {x_train.shape}')
+    print(f'y_train: {y_train.shape}')
+    print(f'x_train size: {len(x_train)}')
+    print(f'y_train size: {len(y_train)}')
+    print(f'x_valid size: {len(x_valid)}')
+    print(f'y_valid size: {len(y_valid)}')
+
     return x_train, x_valid, y_train, y_valid
 
 
@@ -84,14 +107,14 @@ def load_module(module):
 
 def get_model(model_type, image_size, batch_size, epochs, num_classes, loss, data, metrics,
               code_name=None, save_weights=False, static_params=False, params=[], data_transformer_name=None,
-              return_model_only=False, weights_file=None, detection=False, isolate_nodule_image=False):
+              return_model_only=False, weights_file=None, detection=False, isolate_nodule_image=False, attention=False):
     m = load_module(model_type)
     modelDef: CustomModelDefinition = m.ModelDefinition()
     return modelDef.build(image_size=image_size, batch_size=batch_size, epochs=epochs,
                           num_classes=num_classes, loss=loss, data=data, metrics=metrics,
                           code_name=code_name, save_weights=save_weights, static_params=static_params, params=params,
                           data_transformer_name=data_transformer_name, return_model_only=return_model_only,
-                          weights_file=weights_file, detection=detection, isolate_nodule_image=isolate_nodule_image)
+                          weights_file=weights_file, detection=detection, isolate_nodule_image=isolate_nodule_image, attention=attention)
 
 def get_model_definition(model_type):
     m = load_module(model_type)

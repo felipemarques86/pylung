@@ -1,0 +1,77 @@
+{
+    "trial_id": "0",
+    "model_type": "vit",
+    "image_size": 256,
+    "batch_size": 100,
+    "epochs": 3,
+    "num_classes": 4,
+    "loss": "mean_squared_error",
+    "code_name": "Golf Lion",
+    "save_weights": true,
+    "static_params": false,
+    "score": [
+        0.0847494900226593,
+        0.40387865900993347,
+        0.04878048598766327
+    ],
+    "score_names": [
+        "loss",
+        "iou_bb",
+        "accuracy"
+    ],
+    "x_train_size": 1569,
+    "y_train_size": 1569,
+    "x_valid_size": 328,
+    "y_valid_size": 328,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.12271751463413239,
+            0.12312446534633636,
+            0.12305352836847305
+        ],
+        "iou_bb": [
+            0.329271525144577,
+            0.32807672023773193,
+            0.3284272849559784
+        ],
+        "accuracy": [
+            0.10579987615346909,
+            0.10133843123912811,
+            0.11026131361722946
+        ],
+        "val_loss": [
+            0.0847494825720787,
+            0.0847494825720787,
+            0.0847494825720787
+        ],
+        "val_iou_bb": [
+            0.40387874841690063,
+            0.40387874841690063,
+            0.40387874841690063
+        ],
+        "val_accuracy": [
+            0.04878048598766327,
+            0.04878048598766327,
+            0.04878048598766327
+        ]
+    },
+    "isolate_nodule_image": false,
+    "detection": true,
+    "learning_params": {
+        "learning_rate": 2.1522967899180803e-10,
+        "projection_dim": 102,
+        "num_heads": 6,
+        "drop_out_1": 0.05180425514230932,
+        "drop_out_2": 0.012195115354303789,
+        "drop_out_3": 0.05425427072678609,
+        "transformer_layers": 2,
+        "patch_size": 64,
+        "activation": "softmax",
+        "weight": 8.972888763240254e-05,
+        "momentum": 2.035980749674872e-06,
+        "optimizer": "Adadelta"
+    }
+}

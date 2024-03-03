@@ -6,7 +6,7 @@ from main.models.ml_model import MlModel
 
 class VitModel(MlModel):
     def __init__(self, name, version, patch_size=0, projection_dim=0, num_heads=0, mlp_head_units=0, dropout1=0, dropout2=0,
-                 dropout3=0, activation=0, transformer_layers=0, image_size=0, num_classes=0, image_channels=0, embeddings_layer=0):
+                 dropout3=0, activation=0, transformer_layers=0, image_size=0, num_classes=0, image_channels=0, embeddings_layer=0, attention=False):
         super().__init__(name, version, num_classes, image_size)
         self.transformer_layers = transformer_layers
         self.activation = activation
@@ -20,6 +20,7 @@ class VitModel(MlModel):
         self.type = 'VitModel'
         self.image_channels = image_channels
         self.embeddings_layer = embeddings_layer
+        self.attention = attention
 
     def export_as_table(self):
         table = super().export_as_table()
@@ -78,9 +79,18 @@ class VitModel(MlModel):
             # Layer normalization 1.
             x1 = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
             # Create a multi-head attention layer.
-            attention_output = layers.MultiHeadAttention(
-                num_heads=self.num_heads, key_dim=self.projection_dim, dropout=self.dropout1
-            )(x1, x1)
+            attention_output = None
+
+            if self.attention:
+                print('Using modified multi head attention')
+                attention_output, self.attention_score = ModifiedMultiHeadAttention(
+                    num_heads=self.num_heads, key_dim=self.projection_dim, dropout=self.dropout1
+                )(x1, x1)
+            else:
+                print('Using DEFAULT multi head attention')
+                attention_output = tf.keras.layers.MultiHeadAttention(
+                    num_heads=self.num_heads, key_dim=self.projection_dim, dropout=self.dropout1
+                )(x1, x1)
             # Skip connection 1.
             x2 = layers.Add()([attention_output, encoded_patches])
             # Layer normalization 2.
@@ -112,6 +122,13 @@ class VitModel(MlModel):
         embeddings_model = tf.keras.Model(inputs=inputs, outputs=outputs)
         return embeddings_model
 
+
+class ModifiedMultiHeadAttention(tf.keras.layers.MultiHeadAttention):
+    def call(self, query, value, key=None, **kwargs):
+        if key is None:
+            key = value
+        outputs = super().call(query, value, key=key, return_attention_scores=True, **kwargs)
+        return outputs
 class Patches(layers.Layer):
     def __init__(self, patch_size, p_input_shape, p_num_patches, p_projection_dim, p_num_heads, p_transformer_units,
                  p_transformer_layers, p_mlp_head_units):

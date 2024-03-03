@@ -1,0 +1,77 @@
+{
+    "trial_id": "0",
+    "model_type": "vit",
+    "image_size": 256,
+    "batch_size": 100,
+    "epochs": 3,
+    "num_classes": 4,
+    "loss": "mean_squared_error",
+    "code_name": "India Lion",
+    "save_weights": true,
+    "static_params": false,
+    "score": [
+        0.08709315210580826,
+        0.3998623490333557,
+        0.07926829159259796
+    ],
+    "score_names": [
+        "loss",
+        "iou_bb",
+        "accuracy"
+    ],
+    "x_train_size": 1569,
+    "y_train_size": 1569,
+    "x_valid_size": 328,
+    "y_valid_size": 328,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.1254274994134903,
+            0.1250036209821701,
+            0.12477800995111465
+        ],
+        "iou_bb": [
+            0.3245027959346771,
+            0.3259686827659607,
+            0.32643523812294006
+        ],
+        "accuracy": [
+            0.1440407931804657,
+            0.17208412289619446,
+            0.16889739036560059
+        ],
+        "val_loss": [
+            0.08788090944290161,
+            0.08746545761823654,
+            0.08709339052438736
+        ],
+        "val_iou_bb": [
+            0.3976670801639557,
+            0.39881500601768494,
+            0.3998613953590393
+        ],
+        "val_accuracy": [
+            0.06707317382097244,
+            0.07621951401233673,
+            0.07926829159259796
+        ]
+    },
+    "isolate_nodule_image": false,
+    "detection": true,
+    "learning_params": {
+        "learning_rate": 0.00026090709153854476,
+        "projection_dim": 98,
+        "num_heads": 6,
+        "drop_out_1": 0.15333886763985818,
+        "drop_out_2": 0.2911447470361286,
+        "drop_out_3": 0.029547321870084832,
+        "transformer_layers": 3,
+        "patch_size": 64,
+        "activation": "softmax",
+        "weight": 1.4433227710118512e-07,
+        "momentum": 9.004366175787532e-07,
+        "optimizer": "Adagrad"
+    }
+}

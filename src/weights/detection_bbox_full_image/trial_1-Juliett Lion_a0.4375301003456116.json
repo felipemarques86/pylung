@@ -1,0 +1,77 @@
+{
+    "trial_id": "1",
+    "model_type": "vit",
+    "image_size": 256,
+    "batch_size": 100,
+    "epochs": 3,
+    "num_classes": 4,
+    "loss": "mean_squared_error",
+    "code_name": "Juliett Lion",
+    "save_weights": true,
+    "static_params": false,
+    "score": [
+        0.08528631925582886,
+        0.4375301003456116,
+        0.8079268336296082
+    ],
+    "score_names": [
+        "loss",
+        "iou_bb",
+        "accuracy"
+    ],
+    "x_train_size": 1569,
+    "y_train_size": 1569,
+    "x_valid_size": 328,
+    "y_valid_size": 328,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.13326074182987213,
+            0.13330700993537903,
+            0.13344494998455048
+        ],
+        "iou_bb": [
+            0.3429735004901886,
+            0.3440524935722351,
+            0.3432725965976715
+        ],
+        "accuracy": [
+            0.5519438982009888,
+            0.5513065457344055,
+            0.5506691932678223
+        ],
+        "val_loss": [
+            0.08533719927072525,
+            0.08531272411346436,
+            0.08528711646795273
+        ],
+        "val_iou_bb": [
+            0.43753865361213684,
+            0.4375317394733429,
+            0.43752920627593994
+        ],
+        "val_accuracy": [
+            0.8079268336296082,
+            0.8079268336296082,
+            0.8079268336296082
+        ]
+    },
+    "isolate_nodule_image": false,
+    "detection": true,
+    "learning_params": {
+        "learning_rate": 3.3400637326121445e-06,
+        "projection_dim": 128,
+        "num_heads": 6,
+        "drop_out_1": 0.031720546671165306,
+        "drop_out_2": 0.020136635875833517,
+        "drop_out_3": 0.011040997886374544,
+        "transformer_layers": 5,
+        "patch_size": 32,
+        "activation": "softmax",
+        "weight": 0.005289254100329015,
+        "momentum": 0.003989115559482138,
+        "optimizer": "SGD"
+    }
+}

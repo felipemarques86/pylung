@@ -13,7 +13,7 @@ from main.common.config_classes import ConfigurableObject
 import tensorflow as tf
 
 from main.utilities.utilities_lib import info
-
+from collections import Counter
 
 class Dataset(ConfigurableObject):
     def __init__(self, name, type) -> None:
@@ -48,7 +48,7 @@ class MutableCollectionReader(ConfigurableObject):
 
 
 class DatasetReader(MutableCollectionReader):
-    def __init__(self, dataset, location, part=0, part_size=1, num_parts=0) -> None:
+    def __init__(self, dataset, location) -> None:
         super().__init__()
         self.filter = None
         if not os.path.exists(location):
@@ -57,12 +57,9 @@ class DatasetReader(MutableCollectionReader):
         self.location = location
         self.images = None
         self.annotations = None
-        self.part = part
-        self.part_size = part_size
-        self.num_parts = num_parts
 
     @abstractmethod
-    def load(self, iterative=False, walk=False):
+    def load(self):
         pass
 
     def shuffle_data(self):
@@ -73,18 +70,31 @@ class DatasetReader(MutableCollectionReader):
         self.images = images
         self.annotations = annotations
 
-    def augment(self, percentage=0.1, random_rotation=.5):
+    def augment(self, percentage=0.1, random_rotation=.5, in_imgs=None, in_anns=None, amnt=0, out_imgs=None, out_anns=None, in_ann_raw=[], out_ann_raw=[]):
         modify_image = tf.keras.Sequential([
             layers.RandomFlip("horizontal_and_vertical"),
             layers.RandomRotation(random_rotation)
         ])
-        images_to_be_augmented = random.sample(range(0, len(self.images)), int(len(self.images)*percentage))
-        new_image = None
-        for i in images_to_be_augmented:
-            new_image = modify_image(tf.cast(tf.expand_dims(self.images[i], 0), tf.int32))
-            self.images.append(new_image[0])
-            self.annotations.append(self.annotations[i])
-        return new_image[0]
+
+        if in_imgs is not None and in_anns is not None:
+            images_to_be_augmented = range(0, amnt)
+            s = 0
+            for i in images_to_be_augmented:
+                if len(in_imgs) == s:
+                    s = 0
+                new_image = modify_image(tf.cast(tf.expand_dims(in_imgs[s], 0), tf.int32))
+                out_imgs.append(new_image[0])
+                out_anns.append(in_anns[s])
+                out_ann_raw.append(in_ann_raw[s])
+                s += 1
+        else:
+            images_to_be_augmented = random.sample(range(0, len(self.images)), int(len(self.images)*percentage))
+            new_image = None
+            for i in images_to_be_augmented:
+                new_image = modify_image(tf.cast(tf.expand_dims(self.images[i], 0), tf.int32))
+                self.images.append(new_image[0])
+                self.annotations.append(self.annotations[i])
+            return new_image[0]
 
     def filter_out(self, function):
         self.filter = function
@@ -118,6 +128,7 @@ class DatasetReader(MutableCollectionReader):
         table.add_row(['Max value of images', _max])
         table.add_row(['Min value of images', _min])
         table.add_row(['Example annotation', annotations[0]])
+        # _aggr_counter = Counter()
 
         for a in aggr:
             if len(a) > 1 and not isinstance(a[0], (str, bool)):
@@ -126,22 +137,19 @@ class DatasetReader(MutableCollectionReader):
                 try:
                     _mean.append(mean(a))
                 except:
-                    print(f'Cannot calculate mean')
-                    pass
+                    print('Cannot calculate mean')
                 if len(a) > 1:
                     try:
                         _variance.append(variance(a))
                     except:
-                        print(f'Cannot calculate variance')
-                        pass
+                        print('Cannot calculate variance')
                 else:
                     _variance.append('N/A')
                 if len(a) > 1:
                     try:
                         _std.append(stdev(a))
                     except:
-                        print(f'Cannot calculate stdev')
-                        pass
+                        print('Cannot calculate stdev')
                 else:
                     _std.append('N/A')
 
@@ -150,6 +158,7 @@ class DatasetReader(MutableCollectionReader):
         table.add_row(['Annotations min', _ann_min])
         table.add_row(['Annotations standard deviation', _std])
         table.add_row(['Annotations variance', _variance])
+        # table.add_row(['Annotations count', _aggr_counter])
 
         print(table)
 
@@ -157,7 +166,7 @@ class DatasetReader(MutableCollectionReader):
         with open(file, 'w') as my_file:
             for i in data:
                 np.savetxt(my_file, i)
-    def statistics(self, first=1.0, dump_annotations_to_file=False):
+    def statistics(self, first=1.0):
 
         if first < 1.0:
             (first_images), (first_annotations) = (
@@ -168,12 +177,27 @@ class DatasetReader(MutableCollectionReader):
                 np.asarray(self.annotations[int(len(self.annotations) * first):]))
 
             info(f'Statistics for the first {first*100}% images')
+            # if data_augmentation:
+            #     _aggr_counter = Counter()
+            #     for a in first_annotations:
+            #         _aggr_counter[tuple(a)] += 1
+            #
+            #     max_aggr = max(_aggr_counter, key=_aggr_counter.get)
+            #
+            #     for i in _aggr_counter:
+            #         if _aggr_counter[i] < _aggr_counter[max_aggr]:
+            #             add_n_images = _aggr_counter[max_aggr] - _aggr_counter[i]
+            #             first_images_of_clazz = [first_images[j] for j in range(len(first_images)) if first_annotations[j] == list(i)]
+            #             first_annotations_of_clazz = [first_annotations[j] for j in range(len(first_annotations)) if first_annotations[j] == list(i)]
+            #             self.augment(in_imgs=first_images_of_clazz, in_anns=first_annotations_of_clazz, amnt=add_n_images, out_imgs=first_images, out_anns=first_annotations)
+
             self.calculate_stats(first_images, first_annotations)
-            self.dump_to_file(first_annotations, 'first_annotations.txt')
+
+            #self.dump_to_file(first_annotations, 'first_annotations.txt')
 
             info(f'Statistics for the last {(1-first) * 100}% images')
             self.calculate_stats(last_images, last_annotations)
-            self.dump_to_file(last_annotations, 'last_annotations.txt')
+            #self.dump_to_file(last_annotations, 'last_annotations.txt')
 
         info(f'Statistics for all images')
         self.calculate_stats(self.images, self.annotations)

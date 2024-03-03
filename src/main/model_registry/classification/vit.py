@@ -36,8 +36,9 @@ class ModelDefinition(CustomModelDefinition):
     def build(self, image_size, batch_size, epochs, num_classes, loss, data, metrics,
                        code_name=None, save_weights=False, static_params=False, params=[],
                        data_transformer_name=None,
-                       return_model_only=False, weights_file=None, detection=False, isolate_nodule_image=False):
+                       return_model_only=False, weights_file=None, detection=False, isolate_nodule_image=False, attention=False):
 
+        print('attention', attention)
         model_type = 'vit'
         def objective(trial):
             # Clear clutter from previous Keras session graphs.
@@ -87,7 +88,8 @@ class ModelDefinition(CustomModelDefinition):
                 activation=activation,
                 num_classes=num_classes,
                 transformer_layers=transformer_layers,
-                image_channels=1
+                image_channels=1,
+                attention=attention
             )
 
             vit_model.build_model()
@@ -110,25 +112,27 @@ class ModelDefinition(CustomModelDefinition):
 
             x_train, x_valid, y_train, y_valid = data
 
-            try:
 
-                history = model.fit(
-                    x_train,
-                    y_train,
-                    validation_data=(x_valid, y_valid),
-                    shuffle=True,
-                    batch_size=batch_size,
-                    callbacks=[KerasPruningCallback(trial, "val_loss")],
-                    epochs=epochs,
-                    verbose=1
-                )
 
-            except Exception as e:
-                print('Error during fit process')
-                print(str(e))
-                # If there is a crash, fail the trial and save the error message
-                trial.set_user_attr('error', str(e))
-                return None
+            # try:
+
+            history = model.fit(
+                x_train,
+                y_train,
+                validation_data=(x_valid, y_valid),
+                shuffle=True,
+                batch_size=batch_size,
+                callbacks=[KerasPruningCallback(trial, "val_loss")],
+                epochs=epochs,
+                verbose=1
+            )
+
+            # except Exception as e:
+            #     print('Error during fit process')
+            #     print(e)
+            #     # If there is a crash, fail the trial and save the error message
+            #     trial.set_user_attr('error', str(e))
+            #     return None
 
             # Evaluate the model accuracy on the validation set.
             score = model.evaluate(x_valid, y_valid, verbose=0)

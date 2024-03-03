@@ -1,5 +1,6 @@
 import ast
 import configparser
+import csv
 import io
 import json
 import multiprocessing
@@ -20,7 +21,7 @@ import optuna
 import optuna_dashboard
 import tensorflow
 import typer
-from bottle import response, request
+from bottle import response, request, HTTPError
 from bottle import route, run, static_file
 from colorama import init as colorama_init
 from matplotlib import patches
@@ -34,7 +35,8 @@ from main.experiment.experiment_utilities import get_ds, get_model, load_module
 from main.models.ml_model import CustomModelDefinition
 from main.utilities.utilities_lib import warning, error, info, get_data_transformer, display_original_image_bbox, \
     get_experiment_codename, get_channels, img_transformer, LIDC_ANN_Y0, LIDC_ANN_Y1, LIDC_ANN_X0, LIDC_ANN_X1, \
-    get_list_database_transformers, bounding_box_intersection_over_union, get_data_transformer_function
+    get_list_database_transformers, bounding_box_intersection_over_union, get_data_transformer_function, \
+    LIDC_CENTROID_FLAG
 
 config = configparser.ConfigParser()
 app = typer.Typer()
@@ -123,8 +125,7 @@ def deflate_ds(name: str, _type: str, new_name: str):
 #
 # In summary, this function creates a dataset and saves its configuration file, and if the dataset type is lidc_idri, it loads and saves the dataset parts iteratively.
 @app.command("create_dataset")
-def create_dataset(name: str, type: str, image_size: int = 512, consensus_level: float = 0.5, pad: int = 0,
-                   current_part: int = 0, part_size: int = 100, stop_after_current_part: bool = False):
+def create_dataset(name: str, type: str, image_size: int = 512, consensus_level: float = 0.5, first: float = 1.0, last: float = 0.0, data_transformer_name: str = None, isolate_nodule_image: bool=False, channels=1, zip: bool=True):
     warning("This process might take several minutes or even hours depending on your system")
     path = config['DATASET'][f'processed_{type}_location'] + '/' + name + '/'
     if os.path.exists(path):
@@ -140,45 +141,48 @@ def create_dataset(name: str, type: str, image_size: int = 512, consensus_level:
             'name': name,
             'image_size': image_size,
             'consensus_level': consensus_level,
-            'pad': pad,
-            'part_size': part_size,
-            'type': type
+            'type': type,
+            'data_transformer': data_transformer_name,
+            'isolate_nodule_image': isolate_nodule_image,
+            'channels': channels,
+            'count': '0',
+            'deflated': str(not zip)
         }
         with open(path + 'config.ini', 'w') as configfile:
             dataset_info_config.write(configfile)
     elif dataset_info_config['DEFAULT']['name'] != name or dataset_info_config['DEFAULT']['type'] != type or int(
             dataset_info_config['DEFAULT']['image_size']) != image_size or \
-            float(dataset_info_config['DEFAULT']['consensus_level']) != consensus_level or int(
-        dataset_info_config['DEFAULT']['pad']) != pad or \
-            int(dataset_info_config['DEFAULT']['part_size']) != part_size:
+            float(dataset_info_config['DEFAULT']['consensus_level']) != consensus_level:
         error(
             f"Current config.ini for the dataset '{name}' file is not consistent with the parameters specified. Please change the parameters or the config.ini file")
         exit(-1)
 
     if type == 'lidc_idri':
+        data_transformer = None
+        im_transformer = DatasetTransformer(function=img_transformer(image_size, channels, isolate_nodule_image))
+
+        if data_transformer_name is not None:
+            _, data_transformer, _, metrics = get_data_transformer(data_transformer_name)
+            info(f'Data transformer {data_transformer_name} will be applied')
+            data_transformer = DatasetTransformer(function=data_transformer)
+
         lidc_dataset_reader = LidcDatasetReader(
             location=path,
             image_size=image_size,
             consensus_level=consensus_level,
-            pad=pad,
-            part=current_part,
-            part_size=part_size
+            first=first,
+            last=last,
+            data_transformer=data_transformer,
+            im_transformer=im_transformer,
+            zip=zip
         )
-        lidc_dataset_reader.load()
+        count = lidc_dataset_reader.load()
         lidc_dataset_reader.save()
-        n = 1
 
-        if not stop_after_current_part:
-            lidc_dataset_reader = lidc_dataset_reader.next()
+        config['DEFAULT']['count'] = str(count)
 
-            while lidc_dataset_reader.load():
-                lidc_dataset_reader.save()
-                n = n + 1
-                lidc_dataset_reader = lidc_dataset_reader.next()
-
-            dataset_info_config['DEFAULT']['num_parts'] = n
-            with open(path + 'config.ini', 'w') as configfile:
-                dataset_info_config.write(configfile)
+        with open(path + 'config.ini', 'w') as configfile:
+            dataset_info_config.write(configfile)
     else:
         error(f'Type {type} is currently not supported')
 
@@ -239,7 +243,7 @@ def navigate_dataset(dataset_name: str, _type: str, data_transformer_name=None, 
 
 def dataset_details(dataset_name: str, _type: str, data_transformer_name=None, image_size: int = -1,
                     isolate_nodule_image: bool = False, channels: int = -1, train_size: float = 0.8,
-                    dump_annotations_to_file: bool = False):
+                    dump_annotations_to_file: bool = False, centroid_only:bool =False):
     directory = config['DATASET'][f'processed_{_type}_location']
     dataset_reader = CustomLidcDatasetReader(location=directory + '/' + dataset_name + '/')
     ds_config = configparser.ConfigParser()
@@ -247,11 +251,14 @@ def dataset_details(dataset_name: str, _type: str, data_transformer_name=None, i
     info('Dataset config info')
     print_config(ds_config)
 
-    info(f'Loading the statistics (this might take several minutes)...')
-    info('Statistics before data and image transformation')
-    dataset_reader.load_custom()
-    dataset_reader.shuffle_data()
-    dataset_reader.statistics()
+    #info(f'Loading the statistics (this might take several minutes)...')
+    #info('Statistics before data and image transformation')
+
+    if centroid_only:
+        dataset_reader.filter_out(lambda data: not data[LIDC_CENTROID_FLAG])
+
+    #dataset_reader.load_custom()
+    #dataset_reader.statistics()
 
     if isolate_nodule_image is True:
         info('Images will be nodule only')
@@ -270,7 +277,7 @@ def dataset_details(dataset_name: str, _type: str, data_transformer_name=None, i
 
     info('Statistics after data and image transformation')
     dataset_reader.load_custom()
-    dataset_reader.statistics(first=train_size, dump_annotations_to_file=dump_annotations_to_file)
+    dataset_reader.statistics(first=train_size)
 
 
 @app.command("get_image")
@@ -860,20 +867,15 @@ def train(batch_size: int, epochs: int, train_size: float, image_size: int, mode
 #
 # Finally, the function calls the Optuna study's optimize method to run the study and find the best hyperparameters. It prints out the number of finished trials and sets the STUDY_RUNNING variable to false.
 @app.command("study")
-def study(batch_size: int, epochs: int, train_size: float, image_size: int, model_type: str, n_trials: int,
-          data_transformer_name: str, data_set: str, db_name: str, centroid_only: bool = False,
-          isolate_nodule_image: bool = True, detection: bool = False):
+def study(batch_size: int, epochs: int, model_type: str, n_trials: int,
+          data_set: str, db_name: str, fold: int=-1):
     STUDY_RUNNING = True
     study_counter = config['STUDY']['study_counter']
     config['STUDY']['study_counter'] = str(int(config['STUDY']['study_counter']) + 1)
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
 
-    if detection:
-        directions = ["minimize", "maximize"]
-    else:
-
-        directions = ["maximize", "minimize", "maximize"]
+    directions = ["maximize", "minimize", "maximize"]
 
     code_name = str(get_experiment_codename(int(study_counter) + 1))
     optuna_study = optuna.create_study(storage=f'sqlite:///{db_name}.sqlite3', directions=directions,
@@ -883,46 +885,33 @@ def study(batch_size: int, epochs: int, train_size: float, image_size: int, mode
 
     optuna_study.set_user_attr('batch_size', batch_size)
     optuna_study.set_user_attr('epochs', epochs)
-    optuna_study.set_user_attr('train_size', train_size)
     optuna_study.set_user_attr('model_type', model_type)
     optuna_study.set_user_attr('n_trials', n_trials)
-    optuna_study.set_user_attr('data_transformer_name', data_transformer_name)
     optuna_study.set_user_attr('data_set', data_set)
-    optuna_study.set_user_attr('isolate_nodule_image', isolate_nodule_image)
     optuna_study.set_user_attr('pylung_version', config['VERSION']['pylung_version'])
-    optuna_study.set_user_attr('detection', detection)
-    optuna_study.set_user_attr('centroid_only', centroid_only)
-
     table = PrettyTable(['Parameter', 'Value'])
 
     table.add_row(['Model Type', model_type])
     table.add_row(['Batch Size', str(batch_size)])
     table.add_row(['Epochs', str(epochs)])
-    table.add_row(['Train Size', str(train_size)])
-    table.add_row(['Image Size', str(image_size)])
     table.add_row(['N Trials', str(n_trials)])
-    table.add_row(['Problem reduction function', data_transformer_name])
     table.add_row(['Dataset Name', data_set])
-    table.add_row(['Isolate Nodule image', str(isolate_nodule_image)])
-    table.add_row(['Centroid Only', str(centroid_only)])
-    table.add_row(['Detection?', str(detection)])
     table.add_row(['Code name', code_name])
 
     print(table)
 
-    num_classes, data_transformer, loss, metrics = get_data_transformer(data_transformer_name, detection)
 
     info(f'Loading dataset...')
-    data = get_ds(config=config, data_transformer=data_transformer, image_size=image_size, train_size=train_size,
-                  ds=data_set, centroid_only=centroid_only, isolate_nodule_image=isolate_nodule_image,
-                  channels=get_channels(model_type))
+    data = get_ds(config=config,ds=data_set, fold=fold)
     info(f'Dataset loaded with {len(data[0])} images for training and {len(data[1])} images for validation.')
 
-    objective = get_model(model_type=model_type, image_size=image_size, batch_size=batch_size,
+    #TODO: This is a temporary fix. The get_data_transformer function should be used to get the data transformer
+    num_classes, data_transformer, loss, metrics = get_data_transformer('one_hot_two_malignancy_cut3')
+
+    #TODO: this is temporary fix. image_size should be read from the config file
+    objective = get_model(model_type=model_type, image_size=256, batch_size=batch_size,
                           num_classes=num_classes, loss=loss, epochs=epochs, data=data,
-                          metrics=metrics, save_weights=True, code_name=code_name,
-                          isolate_nodule_image=isolate_nodule_image,
-                          data_transformer_name=data_transformer_name, detection=detection)
+                          metrics=metrics, save_weights=True, code_name=code_name)
 
     optuna_study.optimize(objective, n_trials=n_trials)  # , timeout=600)
 
@@ -994,13 +983,16 @@ def get_image_ds(ds_type, ds_name, index):
     with open(directory + f'/{ds_name}/image-{index}.raw', 'rb') as file:
         ret = pickle.load(file)
     if bbox or crop:
-        with open(directory + f'/{ds_name}/annotation-{index}.txt', 'rb') as file:
-            annotations = pickle.load(file)
+        annotations = get_entry_by_index(directory + f'/{ds_name}/annotations.csv', int(index))
+        annotations = annotations[1]
 
-    ret[ret < -1000] = -1000
-    ret[ret > 600] = 600
-    ret = (ret + 1000) / (600 + 1000)
-    ret = ret * 255
+    if ret is None:
+        raise HTTPError(404, "Image not found")
+
+    #ret[ret < -1000] = -1000
+    #ret[ret > 600] = 600
+    #ret = (ret + 1000) / (600 + 1000)
+    #ret = ret * 255
     buf = io.BytesIO()
 
     fig, ax = plt.subplots(figsize=(5.12, 5.12))
@@ -1011,7 +1003,6 @@ def get_image_ds(ds_type, ds_name, index):
         ax.imshow(ret[int(annotations[0]):int(annotations[1]), int(annotations[2]):int(annotations[3])],
                   cmap=plt.cm.gray)
     elif data is not None and crop:
-        print(f'ret[{int(data[0] * 512)}:{int(data[1] * 512)}, {int(data[2] * 512)}:{int(data[3] * 512)}]')
         ax.imshow(ret[int(data[0] * 512):int(data[1] * 512), int(data[2] * 512):int(data[3] * 512)], cmap=plt.cm.gray)
     else:
         ax.imshow(ret, cmap=plt.cm.gray)
@@ -1095,6 +1086,17 @@ def get_textual(value, transformer_function_name):
         return '(check annotation)'
 
 
+def get_entry_by_index(filename, index):
+    data = []
+    with open(filename, 'r') as file:
+        for line in file:
+            # Strip any leading/trailing whitespace and add the line to the data list
+            data.append(ast.literal_eval(line.strip()))
+    if 0 <= index < len(data):
+        return data[index]
+    else:
+        return None
+
 @route('/rest/predict/<trial:path>/<ds_type:path>/<ds_name:path>/<index:path>')
 def predict_nodule(trial, ds_type, ds_name, index):
     directory = config['DATASET'][f'processed_{ds_type}_location']
@@ -1105,9 +1107,14 @@ def predict_nodule(trial, ds_type, ds_name, index):
             return pickle.load(file)
 
     image_path = os.path.join(directory, ds_name, f'image-{index}.raw')
-    annotation_path = os.path.join(directory, ds_name, f'annotation-{index}.txt')
+    annotation_path = os.path.join(directory, ds_name, f'annotations.csv')
     image = load_data(image_path)
-    annotation = load_data(annotation_path)
+
+    # Load the annotation
+    annotation = get_entry_by_index(annotation_path, int(index))
+
+    if annotation is None:
+        raise HTTPError(404, 'Annotation not found')
 
     trial_path = 'weights/' + trial.replace('$', os.sep) + '.json'
     with open(trial_path, 'r') as json_fp:
@@ -1141,11 +1148,11 @@ def predict_nodule(trial, ds_type, ds_name, index):
     ret = {
         'predicted': output[0].tolist(),
         'predicted_int': predicted_int,
-        'annotation': str(annotation),
-        'transformed_annotation': data_transformer(annotation, None, None, None),
+        'annotation': str(annotation[0]),
+        'transformed_annotation': str(annotation[0]),
         'timespent': end - start,
         'textual': get_textual(output[0], json_data['data_transformer_name']),
-        'expected_textual': get_textual(data_transformer(annotation, None, None, None),
+        'expected_textual': get_textual(annotation[0],
                                         json_data['data_transformer_name'])
     }
 

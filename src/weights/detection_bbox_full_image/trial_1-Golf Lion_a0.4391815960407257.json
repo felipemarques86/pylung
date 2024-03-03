@@ -1,0 +1,77 @@
+{
+    "trial_id": "1",
+    "model_type": "vit",
+    "image_size": 256,
+    "batch_size": 100,
+    "epochs": 3,
+    "num_classes": 4,
+    "loss": "mean_squared_error",
+    "code_name": "Golf Lion",
+    "save_weights": true,
+    "static_params": false,
+    "score": [
+        0.08769278228282928,
+        0.4391815960407257,
+        0.7774389982223511
+    ],
+    "score_names": [
+        "loss",
+        "iou_bb",
+        "accuracy"
+    ],
+    "x_train_size": 1569,
+    "y_train_size": 1569,
+    "x_valid_size": 328,
+    "y_valid_size": 328,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.17482620477676392,
+            0.17212992906570435,
+            0.170172780752182
+        ],
+        "iou_bb": [
+            0.30256205797195435,
+            0.30745476484298706,
+            0.3074628412723541
+        ],
+        "accuracy": [
+            0.502230703830719,
+            0.514340341091156,
+            0.5009559988975525
+        ],
+        "val_loss": [
+            0.08994606882333755,
+            0.08871395140886307,
+            0.08768999576568604
+        ],
+        "val_iou_bb": [
+            0.43726077675819397,
+            0.43837645649909973,
+            0.43918243050575256
+        ],
+        "val_accuracy": [
+            0.7957317233085632,
+            0.792682945728302,
+            0.7774389982223511
+        ]
+    },
+    "isolate_nodule_image": false,
+    "detection": true,
+    "learning_params": {
+        "learning_rate": 1.0716274296340948e-08,
+        "projection_dim": 86,
+        "num_heads": 2,
+        "drop_out_1": 0.3771088752975315,
+        "drop_out_2": 0.08382355388866289,
+        "drop_out_3": 0.17222161558328028,
+        "transformer_layers": 3,
+        "patch_size": 8,
+        "activation": "softmax",
+        "weight": 0.0002535795691817419,
+        "momentum": 0.015092231145735456,
+        "optimizer": "Adamax"
+    }
+}

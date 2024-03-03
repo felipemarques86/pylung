@@ -1,6 +1,10 @@
 from keras import Sequential
 from keras.layers import Flatten, Dense, Dropout
 from tensorflow.keras.applications import resnet50
+from tensorflow.keras.models import Model
+import tensorflow as tf
+import cv2
+import numpy as np
 
 from main.models.ml_model import MlModel
 
@@ -42,3 +46,4 @@ class ResNet50Model(MlModel):
         table.add_row(["Pooling", self.pooling])
         table.add_row(["weights", self.weights])
         return table
+

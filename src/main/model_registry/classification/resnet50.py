@@ -33,7 +33,7 @@ class ModelDefinition(CustomModelDefinition):
 
     def build(self, image_size, batch_size, epochs, num_classes, loss, data, metrics, code_name=None,
               save_weights=False, static_params=False, params=[], data_transformer_name=None, return_model_only=False,
-              weights_file=None, detection=False, isolate_nodule_image=False):
+              weights_file=None, detection=False, isolate_nodule_image=False, attention=False):
 
         model_type = 'resnet50'
         def objective(trial):
@@ -69,23 +69,25 @@ class ModelDefinition(CustomModelDefinition):
 
             model_.build_model()
 
-            model: Model = model_.model
+            m = model_.model
 
-            if return_model_only:
-                return model
+            m.original = model_
 
-            model.compile(
+            m.compile(
                 loss=loss,
                 optimizer=self.get_optimizer(optimizer, learning_rate=learning_rate, weight_decay=weight, momentum=momentum),
                 metrics=metrics,
             )
 
+            if weights_file is not None:
+                m.load_weights(weights_file)
+
+            if return_model_only:
+                return m
+
             x_train, x_valid, y_train, y_valid = data
 
-            if weights_file is not None:
-                model.load_weights(weights_file)
-
-            history = model.fit(
+            history = m.fit(
                 x_train,
                 y_train,
                 validation_data=(x_valid, y_valid),
@@ -95,9 +97,9 @@ class ModelDefinition(CustomModelDefinition):
                 verbose=1
             )
 
-            score = model.evaluate(x_valid, y_valid, verbose=0)
+            score = m.evaluate(x_valid, y_valid, verbose=0)
             print(score)
-            print(model.metrics_names)
+            print(m.metrics_names)
 
             trial_id = 'N/A'
             if trial is not None:
@@ -105,10 +107,10 @@ class ModelDefinition(CustomModelDefinition):
 
             train_params = self.train_parameters(model_type, image_size, batch_size, epochs, num_classes, loss, code_name,
                                             save_weights, static_params, data_transformer_name, activation, drop_out,
-                                            history, learning_rate, model, model_, momentum,
+                                            history, learning_rate, m, model_, momentum,
                                             optimizer, score, trial_id, weight, x_train, x_valid, y_train, y_valid, isolate_nodule_image, detection)
 
-            self.save_model('resnet50', model, save_weights, code_name, str(score[1]), trial, train_params, isolate_nodule_image, detection, data_transformer_name)
+            self.save_model('resnet50', m, save_weights, code_name, str(score[1]), trial, train_params, isolate_nodule_image, detection, data_transformer_name)
 
             if detection:
                 return score[1]

@@ -42,7 +42,7 @@ class CustomModelDefinition(ConfigurableObject):
     def build(self, image_size, batch_size, epochs, num_classes, loss, data, metrics,
                    code_name=None, save_weights=False, static_params=False, params=[],
                    data_transformer_name=None,
-                   return_model_only=False, weights_file=None, detection=False, isolate_nodule_image=False):
+                   return_model_only=False, weights_file=None, detection=False, isolate_nodule_image=False, attention=False):
         raise Exception('Implement the method build')
 
     def save_model(self, model_name, model, save_weights, code_name, acc, trial, params, isolate_nodule_image, detection, data_transformer_name):

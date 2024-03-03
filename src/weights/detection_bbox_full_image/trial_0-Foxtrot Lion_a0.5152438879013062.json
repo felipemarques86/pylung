@@ -1,0 +1,65 @@
+{
+    "trial_id": "0",
+    "model_type": "vit",
+    "image_size": 256,
+    "batch_size": 100,
+    "epochs": 3,
+    "num_classes": 4,
+    "loss": "mean_squared_error",
+    "code_name": "Foxtrot Lion",
+    "save_weights": true,
+    "static_params": false,
+    "score": [
+        0.08165755867958069,
+        0.5152438879013062
+    ],
+    "score_names": [
+        "loss",
+        "accuracy"
+    ],
+    "x_train_size": 1569,
+    "y_train_size": 1569,
+    "x_valid_size": 328,
+    "y_valid_size": 328,
+    "image_channels": 1,
+    "version": 1,
+    "data_transformer_name": "bbox",
+    "history": {
+        "loss": [
+            0.14971661567687988,
+            0.15074004232883453,
+            0.15007981657981873
+        ],
+        "accuracy": [
+            0.2893562912940979,
+            0.30783939361572266,
+            0.29572975635528564
+        ],
+        "val_loss": [
+            0.08166280388832092,
+            0.08166003972291946,
+            0.08165735006332397
+        ],
+        "val_accuracy": [
+            0.5091463327407837,
+            0.5091463327407837,
+            0.5152438879013062
+        ]
+    },
+    "isolate_nodule_image": false,
+    "detection": true,
+    "learning_params": {
+        "learning_rate": 4.0686867163969605e-07,
+        "projection_dim": 80,
+        "num_heads": 2,
+        "drop_out_1": 0.04846751013111903,
+        "drop_out_2": 0.07887524366975597,
+        "drop_out_3": 0.16461951744524272,
+        "transformer_layers": 5,
+        "patch_size": 8,
+        "activation": "softmax",
+        "weight": 3.03527553057707e-05,
+        "momentum": 0.00016732459064589203,
+        "optimizer": "Adagrad"
+    }
+}
