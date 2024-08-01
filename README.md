@@ -5,3 +5,8 @@ It offers a robust platform for creating and analyzing studies, as well as for t
 The tool enables users to efficiently navigate and explore medical datasets, allowing them to test and evaluate images against various machine learning models.
 
 A demo of Pylung UI tool can accessed [here](http://pylungui.pt/).
+
+Keep our demo of Pylung UI running!
+
+Donate here:
+https://www.paypal.com/donate/?hosted_button_id=Q73H5QTSWX8PY
